@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090909"><title>TAUR M3CHANICS</title>
+<style>
+:root{--bg:#080808;--panel:#111;--panel2:#171717;--line:#2b2b2b;--text:#eee;--muted:#929292;--red:#d71920}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+header{position:sticky;top:0;z-index:20;background:rgba(8,8,8,.97);border-bottom:1px solid var(--line);padding:16px 15px 12px}
+.logo{font-weight:950;font-size:24px;letter-spacing:2px}.logo span{color:var(--red)}.tag{font-size:9px;letter-spacing:2px;color:#999;margin-top:3px}
+main{max-width:960px;margin:auto;padding:15px 14px 100px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card,.item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px}.stat{font-size:25px;font-weight:900}.muted{color:var(--muted);font-size:12px}
+h2{font-size:18px;margin:2px 0 12px}h3{font-size:14px;margin:2px 0 8px}.section{margin:18px 0}.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+button{border:0;border-radius:9px;background:var(--red);color:white;font-weight:850;padding:11px 13px}button.secondary{background:#282828}button.ghost{background:#151515;border:1px solid #383838}button.danger{background:#64151a}button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{width:100%;background:#0c0c0c;border:1px solid #383838;color:#eee;border-radius:8px;padding:11px;margin:5px 0 9px;font:inherit}textarea{min-height:90px;resize:vertical}label{font-size:11px;color:#aaa;display:block;margin-top:4px}
+.list{display:grid;gap:9px}.badge{display:inline-block;background:#272727;border-radius:20px;padding:4px 7px;font-size:10px;font-weight:900}.redbadge{background:#4b1014}
+.total{font-size:22px;font-weight:900}.small{font-size:11px}.success{color:#8ed18e}.warn{color:#e5bd69}
+nav{position:fixed;z-index:30;bottom:0;left:0;right:0;background:#0d0d0d;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:#0d0d0d;color:#999;border-radius:0;padding:11px 2px;font-size:9px;border-top:2px solid transparent}nav button.active{color:#fff;border-top-color:var(--red);background:#171717}
+.progress{height:8px;background:#252525;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--red)}
+.kpi{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #242424}.hide{display:none}.wide{width:100%}
+</style></head><body>
+<header><div class="logo">TAUR <span>M3CHANICS</span></div><div class="tag">DIAGNOSE. DON'T GUESS.</div></header>
+<main id="app"></main><nav id="nav"></nav>
+<script>
+const KEY="TAUR_M3CHANICS_FINAL_V1";
+const defaults={customers:[],vehicles:[],jobs:[],quotes:[],payments:[],parts:[],pricing:[],tools:[],research:[],settings:{business:"TAUR M3CHANICS"}};
+let db=JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(localStorage.getItem("TAUR_M3CHANICS_v5")||localStorage.getItem("TAUR_M3CHANICS_v4")||JSON.stringify(defaults));
+Object.keys(defaults).forEach(k=>{if(db[k]===undefined)db[k]=Array.isArray(defaults[k])?[]:defaults[k]});
+db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=j.status||"OPEN";j.total=Number(j.total||0);j.warranty=j.warranty||"";j.approval=j.approval||{status:"NOT REQUESTED",at:"",method:"",note:""};j.updated=j.updated||j.created||new Date().toISOString()});
+db.quotes.forEach(q=>{q.status=q.status||"DRAFT";q.total=Number(q.total||0)});
+db.payments.forEach(x=>{x.amount=Number(x.amount||0)});
+if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(db));
+const stages=["INTAKE","DIAGNOSE","ESTIMATE","APPROVED","REPAIR","VERIFY","COMPLETE"];
+const statuses=["OPEN","IN PROGRESS","WAITING","COMPLETE","CANCELLED"];
+const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const save=()=>localStorage.setItem(KEY,JSON.stringify(db));
+const C=id=>db.customers.find(x=>x.id===id), V=id=>db.vehicles.find(x=>x.id===id), J=id=>db.jobs.find(x=>x.id===id), Q=id=>db.quotes.find(x=>x.id===id);
+let view="home";
+
+function render(){nav();let a=$("app");({home,customers,vehicles,jobs,more}[view]||home)(a)}
+function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["more","SYSTEM"]];$("nav").innerHTML=xs.map(x=>`<button class="${view===x[0]?'active':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
+function go(v){view=v;render()}
+function money(n){return "$"+Number(n||0).toFixed(2)}
+function jobPaid(id){return db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)}
+function jobBalance(id){let j=J(id);return Math.max(0,Number(j?.total||0)-jobPaid(id))}
+function jobName(j){return `${esc(j.title||"Untitled Job")}`}
+function vehicleName(v){return v?`${esc(v.year)} ${esc(v.make)} ${esc(v.model)}`:"No vehicle"}
+function jobCard(j){let c=C(j.customerId),v=V(j.vehicleId),paid=jobPaid(j.id);return `<div class="item">
+<div class="row"><b>${jobName(j)}</b><span class="badge ${j.stage!=="COMPLETE"?'redbadge':''}">${esc(j.stage)}</span></div>
+<div class="muted">${esc(c?.name||"No customer")} • ${vehicleName(v)}</div>
+<div class="small" style="margin-top:7px">${esc(j.complaint||"No complaint entered")}</div>
+<div class="row" style="margin-top:10px"><span class="small">Total ${money(j.total)} • Paid ${money(paid)}</span><button class="ghost" onclick="jobFile('${j.id}')">OPEN FILE</button></div></div>`}
+
+function home(a){
+let active=db.jobs.filter(j=>j.stage!=="COMPLETE"&&j.status!=="CANCELLED").length;
+let billed=db.jobs.reduce((n,j)=>n+Number(j.total||0),0), paid=db.payments.reduce((n,p)=>n+Number(p.amount||0),0);
+a.innerHTML=`<section class="grid"><div class="card"><div class="stat">${active}</div><div class="muted">ACTIVE JOBS</div></div>
+<div class="card"><div class="stat">${db.customers.length}</div><div class="muted">CUSTOMERS</div></div>
+<div class="card"><div class="stat">${db.vehicles.length}</div><div class="muted">VEHICLES</div></div>
+<div class="card"><div class="stat">${money(paid)}</div><div class="muted">COLLECTED</div></div></section>
+<section class="section"><div class="row"><h2>COMMAND CENTER</h2><button onclick="newJob()">+ NEW JOB</button></div>
+<div class="card"><div class="kpi"><span>Job value</span><b>${money(billed)}</b></div><div class="kpi"><span>Collected</span><b>${money(paid)}</b></div><div class="kpi"><span>Outstanding</span><b>${money(Math.max(0,billed-paid))}</b></div></div></section>
+<section class="section"><h2>ACTIVE WORK</h2><div class="list">${db.jobs.filter(j=>j.stage!=="COMPLETE").slice().reverse().slice(0,6).map(jobCard).join("")||'<div class="card muted">No active jobs.</div>'}</div></section>`}
+
+function customers(a){a.innerHTML=`<div class="row"><h2>CUSTOMERS</h2><button onclick="newCustomer()">+ CUSTOMER</button></div><input placeholder="Search..." oninput="filterCustomers(this.value)"><div id="cl" class="list">${db.customers.slice().reverse().map(customerCard).join("")||'<div class="card muted">No customers.</div>'}</div>`}
+function customerCard(c){let jobs=db.jobs.filter(j=>j.customerId===c.id);return `<div class="item"><div class="row"><b>${esc(c.name)}</b><span class="badge">${jobs.length} JOBS</span></div><div class="muted">${esc(c.phone||"")} ${c.email?'• '+esc(c.email):""}</div><div class="row" style="margin-top:9px"><button class="ghost" onclick="profile('${c.id}')">PROFILE</button><button class="secondary" onclick="editCustomer('${c.id}')">EDIT</button></div></div>`}
+function filterCustomers(q){q=q.toLowerCase();$("cl").innerHTML=db.customers.slice().reverse().filter(c=>(c.name+c.phone+c.email).toLowerCase().includes(q)).map(customerCard).join("")}
+
+function vehicles(a){a.innerHTML=`<div class="row"><h2>VEHICLES</h2><button onclick="newVehicle()">+ VEHICLE</button></div><input placeholder="Search vehicles..." oninput="filterVehicles(this.value)"><div id="vl" class="list">${db.vehicles.slice().reverse().map(vehicleCard).join("")||'<div class="card muted">No vehicles.</div>'}</div>`}
+function vehicleCard(v){return `<div class="item"><b>${vehicleName(v)}</b><div class="muted">${esc(C(v.customerId)?.name||"Unassigned")} • ${esc(v.mileage||"")} mi</div><div class="row" style="margin-top:9px"><button class="ghost" onclick="vehicleFile('${v.id}')">PROFILE</button><button class="secondary" onclick="editVehicle('${v.id}')">EDIT</button></div></div>`}
+function filterVehicles(q){q=q.toLowerCase();$("vl").innerHTML=db.vehicles.slice().reverse().filter(v=>(v.year+v.make+v.model+v.mileage+(C(v.customerId)?.name||"")).toLowerCase().includes(q)).map(vehicleCard).join("")}
+
+function jobs(a){a.innerHTML=`<div class="row"><h2>JOBS</h2><button onclick="newJob()">+ NEW JOB</button></div><input placeholder="Search jobs, customers, vehicles..." oninput="filterJobs(this.value)"><div id="jl" class="list">${db.jobs.slice().reverse().map(jobCard).join("")||'<div class="card muted">No jobs.</div>'}</div>`}
+function filterJobs(q){q=q.toLowerCase();$("jl").innerHTML=db.jobs.slice().reverse().filter(j=>(j.title+j.complaint+j.stage+j.status+(C(j.customerId)?.name||"")+(V(j.vehicleId)?.model||"")).toLowerCase().includes(q)).map(jobCard).join("")}
+
+function more(a){a.innerHTML=`<h2>SYSTEM</h2><div class="list">
+<div class="item"><h3>WORKFLOW</h3><div class="muted">INTAKE → DIAGNOSE → ESTIMATE → APPROVED → REPAIR → VERIFY → COMPLETE</div><button style="margin-top:9px" onclick="workflow()">OPEN WORKFLOW</button></div>
+<div class="item"><h3>QUOTES & PAYMENTS</h3><div class="muted">${db.quotes.length} quotes • ${db.payments.length} payment records</div><button style="margin-top:9px" onclick="finance()">OPEN FINANCE</button></div>
+<div class="item"><h3>PRICING / PARTS</h3><button class="secondary" onclick="pricing()">PRICING</button> <button class="secondary" onclick="parts()">PARTS</button></div>
+<div class="item"><h3>TOOLS / XIP</h3><button class="secondary" onclick="tools()">TOOLS</button> <button class="secondary" onclick="research()">XIP RESEARCH</button></div>
+<div class="item"><h3>BACKUP / RESTORE</h3><div class="muted">Everything is stored locally on this device/browser.</div><button style="margin-top:9px" onclick="backup()">EXPORT BACKUP</button> <button class="secondary" onclick="$('restore').click()">RESTORE</button><input id="restore" type="file" accept=".json" hidden onchange="restore(this)"></div>
+<div class="item"><h3>SYSTEM AUDIT</h3><div class="muted">Find orphaned records, invalid totals, duplicate IDs, and incomplete links without changing business policy.</div><button style="margin-top:9px" onclick="audit()">RUN AUDIT</button></div>
+<div class="item"><h3>PHASE 1 FUNDAMENTALS</h3><div class="muted">Phase 1 pricing, parts, warranty, cancellation/payment, travel, and branding fundamentals are treated as locked business rules. This app adds operational tooling around them; it does not rewrite them.</div></div>
+<div class="item"><h3>BUSINESS SETTINGS</h3><button class="secondary" onclick="settings()">OPEN SETTINGS</button></div>
+</div>`}
+
+function form(title,body){$("app").innerHTML=`<div class="row"><h2>${title}</h2><button class="secondary" onclick="render()">BACK</button></div>${body}`}
+
+function newCustomer(){form("NEW CUSTOMER",`<input id="n" placeholder="Full name"><input id="p" placeholder="Phone"><input id="e" placeholder="Email"><textarea id="no" placeholder="Notes"></textarea><button class="wide" onclick="saveCustomer()">SAVE CUSTOMER</button>`)}
+function saveCustomer(){let x={id:uid(),name:$("n").value.trim(),phone:$("p").value.trim(),email:$("e").value.trim(),notes:$("no").value.trim(),created:new Date().toISOString()};if(!x.name)return alert("Customer name required.");db.customers.push(x);save();render()}
+function editCustomer(id){let c=C(id);form("EDIT CUSTOMER",`<input id="n" value="${esc(c.name)}"><input id="p" value="${esc(c.phone)}"><input id="e" value="${esc(c.email)}"><textarea id="no">${esc(c.notes)}</textarea><button onclick="saveCustomerEdit('${id}')">SAVE</button> <button class="danger" onclick="delCustomer('${id}')">DELETE</button>`)}
+function saveCustomerEdit(id){Object.assign(C(id),{name:$("n").value.trim(),phone:$("p").value.trim(),email:$("e").value.trim(),notes:$("no").value.trim()});save();render()}
+function delCustomer(id){if(confirm("Delete customer? Existing jobs will remain but lose the customer link.")){db.customers=db.customers.filter(x=>x.id!==id);db.jobs.forEach(j=>{if(j.customerId===id)j.customerId=""});save();render()}}
+function profile(id){let c=C(id),vs=db.vehicles.filter(v=>v.customerId===id),js=db.jobs.filter(j=>j.customerId===id);form("CUSTOMER PROFILE",`<div class="card"><h3>${esc(c.name)}</h3><div class="muted">${esc(c.phone||"")} • ${esc(c.email||"")}</div><p class="small">${esc(c.notes||"")}</p></div><section class="section"><div class="row"><h3>VEHICLES</h3><button onclick="newVehicle('${id}')">+ VEHICLE</button></div><div class="list">${vs.map(vehicleCard).join("")||'<div class="muted">None.</div>'}</div></section><section class="section"><h3>SERVICE HISTORY</h3><div class="list">${js.slice().reverse().map(jobCard).join("")||'<div class="muted">No service history.</div>'}</div></section>`)}
+
+function newVehicle(cid=""){form("NEW VEHICLE",`<select id="c"><option value="">Select customer</option>${db.customers.map(x=>`<option value="${x.id}" ${x.id===cid?"selected":""}>${esc(x.name)}</option>`).join("")}</select><input id="y" placeholder="Year"><input id="m" placeholder="Make"><input id="mo" placeholder="Model"><input id="mi" placeholder="Mileage"><input id="vin" placeholder="VIN"><textarea id="no" placeholder="Vehicle notes"></textarea><button class="wide" onclick="saveVehicle()">SAVE VEHICLE</button>`)}
+function saveVehicle(){if(!$("c").value)return alert("Select a customer.");db.vehicles.push({id:uid(),customerId:$("c").value,year:$("y").value,make:$("m").value,model:$("mo").value,mileage:$("mi").value,vin:$("vin").value,notes:$("no").value});save();render()}
+function editVehicle(id){let v=V(id);form("EDIT VEHICLE",`<select id="c">${db.customers.map(x=>`<option value="${x.id}" ${x.id===v.customerId?"selected":""}>${esc(x.name)}</option>`).join("")}</select><input id="y" value="${esc(v.year)}"><input id="m" value="${esc(v.make)}"><input id="mo" value="${esc(v.model)}"><input id="mi" value="${esc(v.mileage)}"><input id="vin" value="${esc(v.vin)}"><textarea id="no">${esc(v.notes)}</textarea><button onclick="saveVehicleEdit('${id}')">SAVE</button> <button class="danger" onclick="delVehicle('${id}')">DELETE</button>`)}
+function saveVehicleEdit(id){Object.assign(V(id),{customerId:$("c").value,year:$("y").value,make:$("m").value,model:$("mo").value,mileage:$("mi").value,vin:$("vin").value,notes:$("no").value});save();render()}
+function delVehicle(id){if(confirm("Delete vehicle?")){db.vehicles=db.vehicles.filter(v=>v.id!==id);db.jobs.forEach(j=>{if(j.vehicleId===id)j.vehicleId=""});save();render()}}
+function vehicleFile(id){let v=V(id),js=db.jobs.filter(j=>j.vehicleId===id);form("VEHICLE FILE",`<div class="card"><b>${vehicleName(v)}</b><div class="muted">Owner: ${esc(C(v.customerId)?.name||"")} • Mileage: ${esc(v.mileage||"")} • VIN: ${esc(v.vin||"")}</div><p class="small">${esc(v.notes||"")}</p></div><section class="section"><h3>SERVICE HISTORY</h3><div class="list">${js.slice().reverse().map(jobCard).join("")||'<div class="muted">No service history.</div>'}</div></section>`)}
+
+function customerOptions(sel=""){return `<option value="">Select customer</option>`+db.customers.map(c=>`<option value="${c.id}" ${c.id===sel?"selected":""}>${esc(c.name)}</option>`).join("")}
+function vehicleOptions(sel=""){return `<option value="">Select vehicle</option>`+db.vehicles.map(v=>`<option value="${v.id}" ${v.id===sel?"selected":""}>${esc(v.year)} ${esc(v.make)} ${esc(v.model)} — ${esc(C(v.customerId)?.name||"")}</option>`).join("")}
+function newJob(){form("NEW JOB",`<input id="t" placeholder="Job title / service"><select id="c">${customerOptions()}</select><select id="v">${vehicleOptions()}</select><textarea id="co" placeholder="CUSTOMER COMPLAINT / CONCERN"></textarea><textarea id="dn" placeholder="DIAGNOSTIC EVIDENCE / TESTS / DTCs"></textarea><textarea id="rn" placeholder="REPAIR / COMPLETION NOTES"></textarea><input id="tot" type="number" step=".01" placeholder="Estimated / agreed total"><select id="st">${stages.map(s=>`<option>${s}</option>`).join("")}</select><select id="ss">${statuses.map(s=>`<option>${s}</option>`).join("")}</select><button class="wide" onclick="saveJob()">CREATE JOB</button>`)}
+function saveJob(){let x={id:uid(),title:$("t").value,customerId:$("c").value,vehicleId:$("v").value,complaint:$("co").value,diagnostic:$("dn").value,repair:$("rn").value,total:Number($("tot").value||0),stage:$("st").value,status:$("ss").value,created:new Date().toISOString(),updated:new Date().toISOString(),warranty:"",paymentStatus:"UNPAID"};if(!x.title)return alert("Job title required.");db.jobs.push(x);save();jobFile(x.id)}
+function jobFile(id){let j=J(id),c=C(j.customerId),v=V(j.vehicleId),paid=db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0),out=Math.max(0,Number(j.total)-paid);form("JOB FILE",`
+<div class="grid"><div class="card"><div class="muted">CUSTOMER</div><b>${esc(c?.name||"Unassigned")}</b></div><div class="card"><div class="muted">VEHICLE</div><b>${vehicleName(v)}</b></div></div>
+<section class="section"><div class="row"><h3>${jobName(j)}</h3><span class="badge ${j.stage!=="COMPLETE"?'redbadge':''}">${esc(j.stage)}</span></div>
+<div class="progress"><i style="width:${((stages.indexOf(j.stage)+1)/stages.length)*100}%"></i></div></section>
+<label>Workflow stage</label><select id="st">${stages.map(s=>`<option ${s===j.stage?"selected":""}>${s}</option>`).join("")}</select>
+<label>Job status</label><select id="ss">${statuses.map(s=>`<option ${s===j.status?"selected":""}>${s}</option>`).join("")}</select>
+<label>Customer complaint</label><textarea id="co">${esc(j.complaint)}</textarea>
+<label>Diagnostic evidence</label><textarea id="dn">${esc(j.diagnostic)}</textarea>
+<label>Repair / verification notes</label><textarea id="rn">${esc(j.repair)}</textarea>
+<label>Customer approval</label>
+<select id="ap"><option ${j.approval?.status==="NOT REQUESTED"?"selected":""}>NOT REQUESTED</option><option ${j.approval?.status==="PENDING"?"selected":""}>PENDING</option><option ${j.approval?.status==="APPROVED"?"selected":""}>APPROVED</option><option ${j.approval?.status==="DECLINED"?"selected":""}>DECLINED</option></select>
+<input id="am" placeholder="Approval method / reference" value="${esc(j.approval?.method||"")}">
+<textarea id="an" placeholder="Approval note / authorization record">${esc(j.approval?.note||"")}</textarea>
+<label>Warranty / workmanship note</label><textarea id="wa">${esc(j.warranty)}</textarea>
+<label>Job total</label><input id="tot" type="number" step=".01" value="${esc(j.total)}">
+<div class="card"><div class="kpi"><span>Total</span><b>${money(j.total)}</b></div><div class="kpi"><span>Paid</span><b>${money(paid)}</b></div><div class="kpi"><span>Outstanding</span><b>${money(out)}</b></div></div>
+<div class="row"><button onclick="saveJobFile('${id}')">SAVE JOB</button><button class="secondary" onclick="quoteFromJob('${id}')">QUOTE</button><button class="secondary" onclick="paymentFor('${id}')">PAYMENT</button></div>
+<div class="row" style="margin-top:8px"><button class="ghost" onclick="advance('${id}')">ADVANCE WORKFLOW →</button><button class="danger" onclick="delJob('${id}')">DELETE</button></div>`)}
+
+function saveJobFile(id){let j=J(id);Object.assign(j,{stage:$("st").value,status:$("ss").value,complaint:$("co").value,diagnostic:$("dn").value,repair:$("rn").value,warranty:$("wa").value,total:Number($("tot").value||0),updated:new Date().toISOString(),approval:{status:$("ap").value,method:$("am").value,note:$("an").value,at:$("ap").value==="APPROVED"?(j.approval?.at||new Date().toISOString()):""}});save();jobFile(id)}
+function advance(id){let j=J(id),i=stages.indexOf(j.stage);if(i<stages.length-1){j.stage=stages[i+1];j.status=j.stage==="COMPLETE"?"COMPLETE":"IN PROGRESS";save();jobFile(id)}}
+function delJob(id){if(confirm("Delete this job and its local record?")){db.jobs=db.jobs.filter(j=>j.id!==id);db.quotes=db.quotes.filter(q=>q.jobId!==id);db.payments=db.payments.filter(p=>p.jobId!==id);save();render()}}
+
+function workflow(){form("WORKFLOW",`<div class="list">${db.jobs.filter(j=>j.stage!=="COMPLETE"&&j.status!=="CANCELLED").map(j=>`${jobCard(j)}<button onclick="advance('${j.id}')">ADVANCE →</button>`).join("")||'<div class="card muted">No active jobs.</div>'}</div>`)}
+function quoteFromJob(id){let j=J(id);form("NEW QUOTE",`<div class="card"><b>${jobName(j)}</b><div class="muted">${esc(C(j.customerId)?.name||"")} • ${vehicleName(V(j.vehicleId))}</div></div><input id="d" placeholder="Quote description"><input id="l" type="number" step=".01" placeholder="Labor"><input id="p" type="number" step=".01" placeholder="Parts"><input id="m" type="number" step=".01" placeholder="Misc / fees"><textarea id="no" placeholder="Quote notes / terms"></textarea><button onclick="saveQuote('${id}')">SAVE QUOTE</button>`)}
+function saveQuote(jobId){let q={id:uid(),jobId,description:$("d").value,labor:Number($("l").value||0),parts:Number($("p").value||0),misc:Number($("m").value||0),notes:$("no").value,created:new Date().toISOString(),status:"DRAFT"};q.total=q.labor+q.parts+q.misc;db.quotes.push(q);let j=J(jobId);j.total=q.total;j.stage="ESTIMATE";save();jobFile(jobId)}
+function paymentFor(id){let j=J(id),bal=jobBalance(id);form("RECORD PAYMENT",`<div class="card"><b>${jobName(j)}</b><div class="kpi"><span>Job total</span><b>${money(j.total)}</b></div><div class="kpi"><span>Paid</span><b>${money(jobPaid(id))}</b></div><div class="kpi"><span>Outstanding</span><b>${money(bal)}</b></div></div><input id="a" type="number" step=".01" max="${bal}" placeholder="Amount received"><select id="m"><option>CASH</option><option>CARD</option><option>TRANSFER</option><option>OTHER</option></select><input id="r" placeholder="Reference / note"><button ${bal<=0?"disabled":""} onclick="savePayment('${id}')">RECORD PAYMENT</button>`)}
+function savePayment(jobId){let amount=Number($("a").value||0),bal=jobBalance(jobId);if(amount<=0)return alert("Enter a payment amount.");if(amount>bal+0.0001)return alert("Payment exceeds the outstanding balance.");db.payments.push({id:uid(),jobId,amount,method:$("m").value,reference:$("r").value,date:new Date().toISOString()});let j=J(jobId);if(jobPaid(jobId)>=Number(j.total)&&j.total>0)j.paymentStatus="PAID";else j.paymentStatus="PARTIAL";save();jobFile(jobId)}
+function finance(){let paid=db.payments.reduce((n,p)=>n+Number(p.amount||0),0),billed=db.jobs.reduce((n,j)=>n+Number(j.total||0),0);form("FINANCE",`<div class="grid"><div class="card"><div class="stat">${money(billed)}</div><div class="muted">BILLED</div></div><div class="card"><div class="stat">${money(paid)}</div><div class="muted">COLLECTED</div></div></div><section class="section"><h3>QUOTES</h3><div class="list">${db.quotes.slice().reverse().map(q=>`<div class="item"><b>${esc(q.description||"Quote")}</b><div class="muted">${esc(C(J(q.jobId)?.customerId||"")?.name||"")} • ${money(q.total)} • ${esc(q.status)}</div></div>`).join("")||'<div class="muted">No quotes.</div>'}</div></section><section class="section"><h3>PAYMENTS</h3><div class="list">${db.payments.slice().reverse().map(p=>`<div class="item"><b>${money(p.amount)}</b> — ${esc(p.method)}<div class="muted">${esc(p.reference||"")} • ${new Date(p.date).toLocaleDateString()}</div></div>`).join("")||'<div class="muted">No payments.</div>'}</div></section>`)}
+function pricing(){form("PRICING",`<input id="n" placeholder="Service name"><input id="p" type="number" step=".01" placeholder="Price"><textarea id="d" placeholder="Description"></textarea><button onclick="addPricing()">ADD SERVICE</button><div class="list">${db.pricing.map(x=>`<div class="item"><b>${esc(x.name)}</b> — ${money(x.price)}<div class="muted">${esc(x.d)}</div></div>`).join("")}</div>`)}
+function addPricing(){db.pricing.push({id:uid(),name:$("n").value,price:Number($("p").value||0),d:$("d").value});save();pricing()}
+function parts(){form("PARTS",`<input id="n" placeholder="Part name"><input id="pn" placeholder="Part number"><input id="c" type="number" step=".01" placeholder="Cost"><input id="s" placeholder="Supplier"><button onclick="addPart()">ADD PART</button><div class="list">${db.parts.map(x=>`<div class="item"><b>${esc(x.name)}</b><div class="muted">${esc(x.pn)} • ${money(x.c)} • ${esc(x.s)}</div></div>`).join("")}</div>`)}
+function addPart(){db.parts.push({id:uid(),name:$("n").value,pn:$("pn").value,c:Number($("c").value||0),s:$("s").value});save();parts()}
+function tools(){form("TOOLS",`<input id="n" placeholder="Tool name"><input id="c" placeholder="Category"><button onclick="addTool()">ADD TOOL</button><div class="list">${db.tools.map(x=>`<div class="item"><b>${esc(x.name)}</b><div class="muted">${esc(x.c)}</div></div>`).join("")}</div>`)}
+function addTool(){db.tools.push({id:uid(),name:$("n").value,c:$("c").value});save();tools()}
+function research(){form("XIP RESEARCH",`<input id="n" placeholder="Research title"><select id="s"><option>OPEN</option><option>VERIFIED</option><option>PROVEN</option><option>STRONGLY SUPPORTED</option><option>CONJECTURAL</option><option>KNOWN PRIOR ART</option><option>DEAD</option></select><textarea id="d" placeholder="Finding / evidence / notes"></textarea><button onclick="addResearch()">ADD RECORD</button><div class="list">${db.research.slice().reverse().map(x=>`<div class="item"><div class="row"><b>${esc(x.n)}</b><span class="badge">${esc(x.s)}</span></div><div class="small">${esc(x.d)}</div></div>`).join("")}</div>`)}
+function addResearch(){db.research.push({id:uid(),n:$("n").value,s:$("s").value,d:$("d").value,date:new Date().toISOString()});save();research()}
+function audit(){
+let issues=[],seen=new Set();
+["customers","vehicles","jobs","quotes","payments","parts","pricing","tools","research"].forEach(k=>db[k].forEach(x=>{if(!x.id)issues.push(`${k}: record without ID`);else if(seen.has(x.id))issues.push(`${k}: duplicate ID ${x.id}`);else seen.add(x.id)}));
+db.vehicles.forEach(v=>{if(v.customerId&&!C(v.customerId))issues.push(`Vehicle ${v.id}: missing customer link`)});
+db.jobs.forEach(j=>{if(j.customerId&&!C(j.customerId))issues.push(`Job ${j.id}: missing customer link`);if(j.vehicleId&&!V(j.vehicleId))issues.push(`Job ${j.id}: missing vehicle link`);if(Number(j.total)<0)issues.push(`Job ${j.id}: negative total`);if(!stages.includes(j.stage))issues.push(`Job ${j.id}: invalid workflow stage`)});
+db.quotes.forEach(q=>{if(q.jobId&&!J(q.jobId))issues.push(`Quote ${q.id}: missing job link`);if(Number(q.total)<0)issues.push(`Quote ${q.id}: negative total`)});
+db.payments.forEach(p=>{if(p.jobId&&!J(p.jobId))issues.push(`Payment ${p.id}: missing job link`);if(Number(p.amount)<=0)issues.push(`Payment ${p.id}: non-positive amount`)});
+form("SYSTEM AUDIT",`<div class="card"><div class="total">${issues.length?"ISSUES FOUND":"SYSTEM CLEAN"}</div><div class="muted">${issues.length?issues.length+" integrity issue(s) detected. Review before relying on affected records.":"No structural integrity issues detected in the local data."}</div></div><div class="list">${issues.map(x=>`<div class="item">${esc(x)}</div>`).join("")||'<div class="item success">✓ Customer → vehicle → job → quote → payment links are structurally intact.</div>'}</div>`);
+}
+function settings(){form("SETTINGS",`<input id="b" value="${esc(db.settings.business)}" placeholder="Business name"><button onclick="db.settings.business=$('b').value;save();alert('Saved.')">SAVE SETTINGS</button><div class="card" style="margin-top:12px"><b>DATA ARCHITECTURE</b><div class="muted">Local-first • customer → vehicle → job → quote → payment → service history</div><div class="muted" style="margin-top:7px">Storage: ${KEY}</div><div class="muted">The app automatically imports the previous TAUR V5/V4 local dataset when present.</div></div>`)}
+function backup(){let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="TAUR_M3CHANICS_FULL_BACKUP.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function restore(inp){let f=inp.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);db=Object.assign(defaults,x);save();render();alert("Backup restored.")}catch(e){alert("Invalid backup.")}};r.readAsText(f)}
+
+
+render();
+</script></body></html>
