@@ -1,4 +1,4 @@
-/* TAUR DETAILING — QC ENGINE v1.1 */
+/* TAUR DETAILING — QC ENGINE v1.2 */
 
 const TAUR_DETAIL_QC_ITEMS = [
   { id: "interior", label: "Interior inspected" },
@@ -55,7 +55,18 @@ function taurDetailQcVerify(job, verifiedBy = "") {
   return { ok: true };
 }
 
+function taurDetailQcCanCompleteV2(job) {
+  if (!job || job.type !== "DETAILING") return { ok: false, reason: "NOT A DETAILING JOB" };
+  if (job.qc?.status !== "VERIFIED") return { ok: false, reason: "FINAL QC VERIFICATION REQUIRED" };
+  return { ok: true };
+}
+
+function taurDetailQcMissingV2(job) {
+  return taurDetailQcMissing(job);
+}
+
 // Integration contract:
-// 1. Create job.qc with taurDetailQcDefault() for DETAILING jobs.
-// 2. Update job.qc.items[itemId] as each QC item is completed.
-// 3. Do not mark a DETAILING job COMPLETE unless taurDetailQcVerify(job).ok === true.
+// 1. Detail jobs receive job.qc on open/create.
+// 2. QC items are updated in the Job File.
+// 3. All items plus any required C4 inspection must pass before verification.
+// 4. A DETAILING job cannot be moved to COMPLETE unless QC status is VERIFIED.
