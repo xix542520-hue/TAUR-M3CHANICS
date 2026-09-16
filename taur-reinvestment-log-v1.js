@@ -3,7 +3,7 @@
    BUSINESS REVENUE -> BUSINESS and OUTSIDE MONEY -> BUSINESS remain separate.
 */
 (()=>{
- const U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthJVXABHQWQ_YyK3rt8h';
+ const U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';
  const KEY='TAUR_M3CHANICS_FINAL_V1';
  const cats=['SUPPLIES','EQUIPMENT','GAS','ADVERTISING','TOOLS','PARTS','FEES','OTHER'];
  let sb=null,bid='';
