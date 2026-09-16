@@ -1,124 +1,15 @@
-name: TAUR UX v2
+name: TAUR UX V2 (ARCHIVED)
 
+# UX V2 is already installed in index.html.
+# Legacy injection is manual-only to prevent concurrent index.html rewrites.
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - index.html
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  ux:
+  archived:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Patch live app UX
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-
-          if 'TAUR UX V2' in s:
-              print('TAUR UX V2 already installed')
-              raise SystemExit(0)
-
-          block = r'''<!-- TAUR UX V2 -->
-          <style id="taur-ux-v2-style">
-          .taur-v2-modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.78);display:flex;align-items:flex-end;justify-content:center;padding:0}
-          .taur-v2-card{width:100%;max-width:620px;max-height:92vh;overflow:auto;background:#111;border:1px solid #333;border-radius:18px 18px 0 0;padding:18px 15px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.45)}
-          .taur-v2-title{font-size:18px;font-weight:900;letter-spacing:.4px;margin-bottom:14px}
-          .taur-v2-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-          .taur-v2-full{grid-column:1/-1}
-          .taur-v2-card input,.taur-v2-card select,.taur-v2-card textarea{margin:3px 0 8px;padding:10px}
-          .taur-v2-card textarea{min-height:58px;height:58px;resize:vertical}
-          .taur-v2-card label{font-size:10px;margin-top:2px}
-          .taur-v2-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-          .taur-v2-actions button{width:100%;padding:12px}
-          @media(max-width:420px){.taur-v2-grid{grid-template-columns:1fr}.taur-v2-full{grid-column:auto}}
-          </style>
-          <script id="taur-ux-v2">
-          (()=>{
-            const escV2=x=>typeof esc==='function'?esc(x??''):String(x??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
-            const closeV2=()=>document.querySelector('.taur-v2-modal')?.remove();
-            window.taurCloseModal=closeV2;
-            function openV2(title,body,saveFn){
-              closeV2();
-              const wrap=document.createElement('div');
-              wrap.className='taur-v2-modal';
-              wrap.innerHTML=`<div class="taur-v2-card" role="dialog" aria-modal="true"><div class="taur-v2-title">${title}</div>${body}<div class="taur-v2-actions"><button class="secondary" type="button" id="taurV2Cancel">CANCEL</button><button type="button" id="taurV2Save">SAVE</button></div></div>`;
-              document.body.appendChild(wrap);
-              wrap.addEventListener('click',e=>{if(e.target===wrap)closeV2()});
-              wrap.querySelector('#taurV2Cancel').onclick=closeV2;
-              wrap.querySelector('#taurV2Save').onclick=()=>saveFn(wrap);
-              setTimeout(()=>wrap.querySelector('input,select,textarea')?.focus(),30);
-            }
-            const customerBody=c=>`<div class="taur-v2-grid">
-              <div class="taur-v2-full"><label>NAME *</label><input id="tv2name" value="${escV2(c?.name||'')}" placeholder="Customer name"></div>
-              <div><label>PHONE</label><input id="tv2phone" type="tel" value="${escV2(c?.phone||'')}" placeholder="Phone"></div>
-              <div><label>EMAIL</label><input id="tv2email" type="email" value="${escV2(c?.email||'')}" placeholder="Email"></div>
-              <div class="taur-v2-full"><label>SERVICE LOG</label><select id="tv2route"><option value="MECHANICS" ${c?.logRouting==='MECHANICS'?'selected':''}>MECHANIC</option><option value="DETAILING" ${c?.logRouting==='DETAILING'?'selected':''}>DETAILING</option><option value="BOTH" ${!c?.logRouting||c?.logRouting==='BOTH'?'selected':''}>BOTH</option></select></div>
-              <div class="taur-v2-full"><label>NOTES</label><textarea id="tv2notes" placeholder="Short customer notes">${escV2(c?.notes||'')}</textarea></div>
-            </div>`;
-            const saveCustomerV2=(wrap,c,isNew)=>{
-              const name=wrap.querySelector('#tv2name').value.trim();
-              if(!name)return alert('Customer name is required.');
-              const data={name,phone:wrap.querySelector('#tv2phone').value.trim(),email:wrap.querySelector('#tv2email').value.trim(),logRouting:wrap.querySelector('#tv2route').value,notes:wrap.querySelector('#tv2notes').value.trim()};
-              if(isNew){const x={id:uid(),created:new Date().toISOString(),...data};db.customers.push(x)}
-              else Object.assign(c,data);
-              save();closeV2();render();
-            };
-            window.newCustomer=()=>openV2('NEW CUSTOMER',customerBody(null),w=>saveCustomerV2(w,null,true));
-            window.editCustomer=id=>{const c=C(id);if(!c)return;openV2('EDIT CUSTOMER',customerBody(c),w=>saveCustomerV2(w,c,false));};
-
-            const vehicleBody=v=>`<div class="taur-v2-grid">
-              <div class="taur-v2-full"><label>OWNER</label><select id="tv2owner"><option value="">Unassigned</option>${db.customers.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(c=>`<option value="${escV2(c.id)}" ${c?.id===v?.customerId?'selected':''}>${escV2(c.name)}</option>`).join('')}</select></div>
-              <div><label>YEAR</label><input id="tv2year" inputmode="numeric" value="${escV2(v?.year||'')}" placeholder="2006"></div>
-              <div><label>MILEAGE</label><input id="tv2mileage" inputmode="numeric" value="${escV2(v?.mileage||'')}" placeholder="120000"></div>
-              <div><label>MAKE</label><input id="tv2make" value="${escV2(v?.make||'')}" placeholder="Honda"></div>
-              <div><label>MODEL</label><input id="tv2model" value="${escV2(v?.model||'')}" placeholder="Accord"></div>
-              <div class="taur-v2-full"><label>NOTES</label><textarea id="tv2notes" placeholder="Short vehicle notes">${escV2(v?.notes||'')}</textarea></div>
-            </div>`;
-            const saveVehicleV2=(wrap,v,isNew)=>{
-              const data={customerId:wrap.querySelector('#tv2owner').value,year:wrap.querySelector('#tv2year').value.trim(),make:wrap.querySelector('#tv2make').value.trim(),model:wrap.querySelector('#tv2model').value.trim(),mileage:wrap.querySelector('#tv2mileage').value.trim(),notes:wrap.querySelector('#tv2notes').value.trim()};
-              if(isNew)db.vehicles.push({id:uid(),created:new Date().toISOString(),...data});else Object.assign(v,data);
-              save();closeV2();render();
-            };
-            window.newVehicle=()=>openV2('NEW VEHICLE',vehicleBody(null),w=>saveVehicleV2(w,null,true));
-            window.editVehicle=id=>{const v=V(id);if(!v)return;openV2('EDIT VEHICLE',vehicleBody(v),w=>saveVehicleV2(w,v,false));};
-
-            function labelMechanic(){
-              const root=document.getElementById('app');if(!root)return;
-              const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-              const nodes=[];while(walk.nextNode())nodes.push(walk.currentNode);
-              nodes.forEach(n=>{if(n.nodeValue&&/\bMECHANICS\b/.test(n.nodeValue))n.nodeValue=n.nodeValue.replace(/\bMECHANICS\b/g,'MECHANIC')});
-            }
-            new MutationObserver(labelMechanic).observe(document.getElementById('app'),{childList:true,subtree:true,characterData:true});
-            labelMechanic();
-          })();
-          </script>
-          '''
-
-          if '</body>' not in s:
-              raise SystemExit('index.html missing </body>')
-          s=s.replace('</body>', block+'</body>', 1)
-          p.write_text(s,encoding='utf-8')
-          print('TAUR UX V2 injected')
-          PY
-
-      - name: Commit UX update
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then
-            echo "No changes"
-            exit 0
-          fi
-          git commit -m "Simplify customer and vehicle workflow"
-          git push
+      - run: echo "TAUR UX V2 is integrated; no legacy injector required."
