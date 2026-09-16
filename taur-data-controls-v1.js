@@ -1,0 +1,50 @@
+/* TAUR DATA CONTROLS + TIP LEDGER V1 */
+(()=>{
+ const escX=x=>typeof esc==='function'?esc(x??''):String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+ const moneyX=n=>typeof money==='function'?money(n):'$'+Number(n||0).toFixed(2);
+ const close=()=>document.querySelector('.taur-dc-modal')?.remove();
+ const job=id=>typeof J==='function'?J(id):db.jobs.find(x=>x.id===id);
+ const customer=id=>typeof C==='function'?C(id):db.customers.find(x=>x.id===id);
+ const vehicle=id=>typeof V==='function'?V(id):db.vehicles.find(x=>x.id===id);
+ const saveX=()=>typeof save==='function'?save():localStorage.setItem('TAUR_M3CHANICS_FINAL_V1',JSON.stringify(db));
+ const paymentsFor=id=>db.payments.filter(p=>p.jobId===id);
+ const tipFor=id=>paymentsFor(id).reduce((n,p)=>n+Number(p.tip||0),0);
+ function modal(title,body,actions){
+   close(); const w=document.createElement('div'); w.className='taur-dc-modal';
+   w.innerHTML=`<div class="taur-dc-card"><div class="taur-dc-head"><b>${title}</b><button class="secondary" id="dcClose">CLOSE</button></div>${body}<div class="taur-dc-actions">${actions||''}</div></div>`;
+   document.body.appendChild(w); w.querySelector('#dcClose').onclick=close; w.addEventListener('click',e=>{if(e.target===w)close()}); return w;
+ }
+ function tipPayment(id){
+   const j=job(id); if(!j)return;
+   const quoted=Number(j.total||0), paid=typeof jobPaid==='function'?jobPaid(id):paymentsFor(id).reduce((n,p)=>n+Number(p.amount||0),0), tip=tipFor(id), balance=Math.max(0,quoted-(paid-tip));
+   const w=modal('RECORD PAYMENT + TIP',`<div class="taur-dc-stats"><div><b>${moneyX(quoted)}</b><span>QUOTE</span></div><div><b>${moneyX(balance)}</b><span>QUOTE BALANCE</span></div><div><b>${moneyX(tip)}</b><span>TIPS TO DATE</span></div></div><div class="taur-dc-grid"><div><label>PAYMENT TOWARD QUOTE</label><input id="dcBase" type="number" min="0" step="0.01" value="${balance.toFixed(2)}"></div><div><label>TIP</label><input id="dcTip" type="number" min="0" step="0.01" value="0.00"></div><div class="taur-dc-full"><label>METHOD</label><select id="dcMethod"><option>CASH</option><option>CARD</option><option>VENMO</option><option>CASH APP</option><option>ZELLE</option><option>OTHER</option></select></div></div><div class="taur-dc-hint">Tip is tracked separately from the quoted job price, so a $100 quote can collect $120 without changing the quote to $120.</div>`,`<button class="secondary" id="dcCancel">CANCEL</button><button id="dcSave">RECORD</button>`);
+   w.querySelector('#dcCancel').onclick=close;
+   w.querySelector('#dcSave').onclick=()=>{const base=Number(w.querySelector('#dcBase').value||0),t=Number(w.querySelector('#dcTip').value||0);if(!Number.isFinite(base)||base<0||!Number.isFinite(t)||t<0||base+t<=0)return alert('Enter a payment and/or tip.');if(base>balance)return alert('Quote payment cannot exceed the remaining quote balance. Put the extra amount in TIP.');db.payments.push({id:uid(),jobId:id,amount:base+t,baseAmount:base,tip:t,created:new Date().toISOString(),method:w.querySelector('#dcMethod').value});saveX();close();if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(id);else if(typeof render==='function')render()};
+ }
+ function editJob(id){
+   const j=job(id);if(!j)return;
+   const w=modal('EDIT JOB',`<div class="taur-dc-grid"><div class="taur-dc-full"><label>JOB / SERVICE</label><input id="eTitle" value="${escX(j.title||'')}"></div><div><label>STAGE</label><select id="eStage">${(stages||[]).map(x=>`<option ${x===j.stage?'selected':''}>${escX(x)}</option>`).join('')}</select></div><div><label>STATUS</label><select id="eStatus">${(statuses||[]).map(x=>`<option ${x===j.status?'selected':''}>${escX(x)}</option>`).join('')}</select></div><div><label>QUOTE / TOTAL</label><input id="eTotal" type="number" min="0" step="0.01" value="${Number(j.total||0)}"></div><div><label>LABOR HOURS</label><input id="eHours" type="number" min="0" step="0.1" value="${Number(j.laborHours||0)}"></div><div class="taur-dc-full"><label>NOTES</label><textarea id="eNotes">${escX(j.complaint||'')}</textarea></div><div class="taur-dc-full"><label>FOLLOW-UP</label><input id="eFollow" type="date" value="${escX(j.followUpDate||'')}"></div></div>`,`<button class="secondary" id="dcCancel">CANCEL</button><button id="dcSave">SAVE CHANGES</button>`);
+   w.querySelector('#dcCancel').onclick=close;w.querySelector('#dcSave').onclick=()=>{j.title=w.querySelector('#eTitle').value.trim()||'Untitled Job';j.stage=w.querySelector('#eStage').value;j.status=w.querySelector('#eStatus').value;j.total=Number(w.querySelector('#eTotal').value||0);j.laborHours=Number(w.querySelector('#eHours').value||0);j.complaint=w.querySelector('#eNotes').value.trim();j.followUpDate=w.querySelector('#eFollow').value;j.updated=new Date().toISOString();saveX();close();render()};
+ }
+ function delJob(id){const j=job(id);if(!j)return;if(!confirm(`DELETE JOB?\n\n${j.title||'Untitled Job'}\n\nThis removes the job and its payment records from this device.`))return;db.jobs=db.jobs.filter(x=>x.id!==id);db.payments=db.payments.filter(p=>p.jobId!==id);saveX();close();render()}
+ function delCustomer(id){const c=customer(id);if(!c)return;const hasJobs=db.jobs.some(j=>j.customerId===id),hasVehicles=db.vehicles.some(v=>v.customerId===id);if(hasJobs||hasVehicles)return alert('This customer has linked vehicles or jobs. Delete those records first so TAUR does not orphan history.');if(!confirm(`DELETE CUSTOMER?\n\n${c.name||'Unnamed customer'}`))return;db.customers=db.customers.filter(x=>x.id!==id);saveX();render()}
+ function delVehicle(id){const v=vehicle(id);if(!v)return;const hasJobs=db.jobs.some(j=>j.vehicleId===id);if(hasJobs)return alert('This vehicle has linked jobs. Delete or reassign those jobs first.');if(!confirm(`DELETE VEHICLE?\n\n${v.year||''} ${v.make||''} ${v.model||''}`))return;db.vehicles=db.vehicles.filter(x=>x.id!==id);saveX();render()}
+ function enhanceJobFile(){const m=document.querySelector('.taur-jobfile-xip');if(!m)return;const pay=m.querySelector('#jfxPay');const title=m.querySelector('.taur-jfx-title')?.textContent||'';const jx=db.jobs.find(j=>j.title===title);if(pay&&!pay.dataset.dcTip&&jx){pay.onclick=()=>tipPayment(jx.id);pay.dataset.dcTip='1'}if(jx&&!m.querySelector('#jfxEdit')){const a=m.querySelector('.taur-jfx-actions');if(a){const e=document.createElement('button');e.className='secondary';e.id='jfxEdit';e.textContent='EDIT';e.onclick=()=>editJob(jx.id);const d=document.createElement('button');d.className='danger';d.id='jfxDelete';d.textContent='DELETE';d.onclick=()=>delJob(jx.id);a.insertBefore(e,a.firstChild);a.appendChild(d)}}}
+ function augment(){
+   document.querySelectorAll('.item').forEach(item=>{
+     if(item.dataset.dcDone)return;
+     const buttons=[...item.querySelectorAll('button')];
+     const edit=buttons.find(b=>b.textContent.trim()==='EDIT');
+     if(edit){const onclick=edit.getAttribute('onclick')||'';const m=onclick.match(/editCustomer\('([^']+)'\)/)||onclick.match(/editVehicle\('([^']+)'\)/);if(m){const isC=onclick.includes('editCustomer');const d=document.createElement('button');d.className='danger';d.textContent='DELETE';d.onclick=()=>isC?delCustomer(m[1]):delVehicle(m[1]);edit.parentElement.appendChild(d)}}
+     const open=buttons.find(b=>b.textContent.trim()==='OPEN FILE');
+     if(open){const onclick=open.getAttribute('onclick')||'';const m=onclick.match(/jobFile\('([^']+)'\)/);if(m){const id=m[1];open.onclick=e=>{e.preventDefault();if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(id);else if(typeof jobFile==='function')jobFile(id)}}}
+     item.dataset.dcDone='1';
+   });
+   enhanceJobFile();
+ }
+ function mountStyle(){if(document.getElementById('taur-dc-style'))return;const s=document.createElement('style');s.id='taur-dc-style';s.textContent=`.taur-dc-modal{position:fixed;inset:0;z-index:130;background:rgba(0,0,0,.84);display:flex;align-items:flex-end;justify-content:center}.taur-dc-card{width:100%;max-width:650px;max-height:94vh;overflow:auto;background:#101010;border:1px solid #333;border-radius:18px 18px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(0,0,0,.55)}.taur-dc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:18px}.taur-dc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.taur-dc-full{grid-column:1/-1}.taur-dc-card input,.taur-dc-card select,.taur-dc-card textarea{margin:3px 0 8px}.taur-dc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.taur-dc-actions button{width:100%}.taur-dc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.taur-dc-stats div{background:#171717;border:1px solid #303030;border-radius:10px;padding:9px}.taur-dc-stats b{display:block;font-size:16px}.taur-dc-stats span{font-size:9px;color:#999}.taur-dc-hint{font-size:10px;color:#999;margin:3px 0 8px}@media(max-width:430px){.taur-dc-grid{grid-template-columns:1fr}.taur-dc-full{grid-column:auto}.taur-dc-stats{grid-template-columns:1fr 1fr}.taur-dc-stats div:last-child{grid-column:1/-1}}`;
+   document.head.appendChild(s);
+ }
+ function patch(){mountStyle();augment();window.taurEditJob=editJob;window.taurDeleteJob=delJob;window.taurRecordPayment=tipPayment;window.taurDeleteCustomer=delCustomer;window.taurDeleteVehicle=delVehicle;const oldRender=window.render;if(oldRender&&!oldRender.__taurDC){const r=oldRender;window.render=function(){r();setTimeout(augment,0)};window.render.__taurDC=true}}
+ window.taurDataControlsReady=true;patch();new MutationObserver(()=>{augment();enhanceJobFile()}).observe(document.body,{childList:true,subtree:true});
+})();
