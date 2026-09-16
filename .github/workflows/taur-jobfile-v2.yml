@@ -36,7 +36,7 @@ jobs:
       - name: Commit wiring
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[github-actions]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Wire TAUR XIP Job File v2"
