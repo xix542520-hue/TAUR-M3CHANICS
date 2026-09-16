@@ -45,7 +45,9 @@ const C=id=>db.customers.find(x=>x.id===id), V=id=>db.vehicles.find(x=>x.id===id
 let view="home";
 
 function render(){nav();let a=$("app");({home,customers,vehicles,jobs,detail,logbook,more}[view]||home)(a)}
-function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["detail","DETAIL"],["logbook","LOGBOOK"],["more","SYSTEM"]];$("nav").innerHTML=xs.map(x=>`<button class="${view===x[0]?'active':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
+
+function mechanicView(a){a.innerHTML=`<div class="row"><h2>MECHANIC</h2><button onclick="newJob('MECHANICS')">+ JOB</button></div><div class="grid"><div class="card"><div class="muted">OPEN JOBS</div><div class="stat">${db.jobs.filter(j=>j.type==="MECHANICS"&&j.stage!=="COMPLETE").length}</div></div><div class="card"><div class="muted">COLLECTED</div><div class="stat">${money(db.jobs.filter(j=>j.type==="MECHANICS").reduce((n,j)=>n+jobPaid(j.id),0))}</div></div></div><div class="section"><h3>MECHANIC JOBS</h3><div class="list">${db.jobs.filter(j=>j.type==="MECHANICS").slice().reverse().map(jobCard).join("")||'<div class="card muted">No mechanic jobs.</div>'}</div></div>`}
+function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["mechanic","MECHANIC"],["detail","DETAIL"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["more","SYSTEM"]];$("nav").innerHTML=xs.map(x=>`<button class="${view===x[0]?'active':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
 function go(v){view=v;render()}
 function money(n){return "$"+Number(n||0).toFixed(2)}
 function jobPaid(id){return db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)}
