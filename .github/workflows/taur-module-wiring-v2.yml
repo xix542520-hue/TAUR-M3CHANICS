@@ -7,7 +7,6 @@ on:
       - 'taur-*.js'
       - 'DETAILING_QC_ENGINE.js'
       - '.github/workflows/taur-module-wiring-v2.yml'
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -38,6 +37,7 @@ jobs:
             '<script src="taur-vehicle-history-v1.js"></script>',
             '<script src="taur-growth-linking-v1.js"></script>',
             '<script src="taur-job-linking-v1.js"></script>',
+            '<script src="taur-pricebook-bridge-v1.js"></script>',
           ]
           if '</body>' not in s:
               raise SystemExit('index.html missing </body>')
@@ -74,5 +74,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html taur-cloud-sync-v1.js
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Wire TAUR relationship-first job linking"
+          git commit -m "Wire TAUR shared price book bridge"
           git push
