@@ -1,0 +1,55 @@
+name: TAUR HOME Logbook
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - index.html
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Replace HOME with combined logbook
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          new_home = r'''function home(a){
+          let all=db.jobs.slice().reverse(),active=all.filter(j=>j.stage!=="COMPLETE"&&j.status!=="CANCELLED"),mechanic=all.filter(j=>(j.type||"MECHANICS")==="MECHANICS"),details=all.filter(j=>j.type==="DETAILING");
+          let billed=all.reduce((n,j)=>n+Number(j.total||0),0),paid=all.reduce((n,j)=>n+jobPaid(j.id),0);
+          a.innerHTML=`<section class="grid">
+          <div class="card"><div class="stat">${active.length}</div><div class="muted">ACTIVE JOBS</div></div>
+          <div class="card"><div class="stat">${all.length}</div><div class="muted">TOTAL JOBS</div></div>
+          <div class="card"><div class="stat">${db.customers.length}</div><div class="muted">CUSTOMERS</div></div>
+          <div class="card"><div class="stat">${money(paid)}</div><div class="muted">COLLECTED</div></div></section>
+          <section class="section"><div class="row"><h2>TAUR LOGBOOK</h2><button onclick="newJob()">+ NEW JOB</button></div>
+          <div class="card"><div class="kpi"><span>Mechanic jobs</span><b>${mechanic.length}</b></div><div class="kpi"><span>Detail jobs</span><b>${details.length}</b></div><div class="kpi"><span>Total job value</span><b>${money(billed)}</b></div><div class="kpi"><span>Outstanding</span><b>${money(Math.max(0,billed-paid))}</b></div></div></section>
+          <section class="section"><h2>ACTIVE LOGBOOK</h2><div class="list">${active.slice(0,12).map(jobCard).join("")||'<div class="card muted">No active jobs.</div>'}</div></section>
+          <section class="section"><h2>RECENT JOB HISTORY</h2><div class="list">${all.slice(0,12).map(jobCard).join("")||'<div class="card muted">No job history yet.</div>'}</div></section>`}
+          '''
+
+          pattern = r'function home\(a\)\{.*?\n\}\n\nfunction customers\(a\)'
+          s2, n = re.subn(pattern, new_home + '\nfunction customers(a)', s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('HOME function pattern not found; no changes made')
+          p.write_text(s2, encoding='utf-8')
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Make HOME the combined TAUR logbook"
+          git push
