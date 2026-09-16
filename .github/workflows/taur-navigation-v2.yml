@@ -1,45 +1,15 @@
-name: TAUR navigation v2
+name: TAUR navigation v2 (ARCHIVED)
 
+# Navigation is already integrated in index.html.
+# Legacy patching is manual-only to prevent overwrite conflicts.
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - index.html
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  navigation:
+  archived:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Patch navigation
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          old='function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["detail","DETAIL"],["logbook","LOGBOOK"],["more","SYSTEM"]];'
-          new='function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["mechanic","MECHANIC"],["detail","DETAIL"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["more","SYSTEM"]];'
-          if old not in s:
-              raise SystemExit('navigation pattern not found')
-          s=s.replace(old,new,1)
-          s=s.replace('case "home":home(a);break;','case "home":home(a);break;\ncase "mechanic":mechanicView(a);break;',1)
-          marker='function mechanicView(a){'
-          if marker not in s:
-              insert='''\nfunction mechanicView(a){a.innerHTML=`<div class="row"><h2>MECHANIC</h2><button onclick="newJob(\'MECHANICS\')">+ JOB</button></div><div class="grid"><div class="card"><div class="muted">OPEN JOBS</div><div class="stat">${db.jobs.filter(j=>j.type==="MECHANICS"&&j.stage!=="COMPLETE").length}</div></div><div class="card"><div class="muted">COLLECTED</div><div class="stat">${money(db.jobs.filter(j=>j.type==="MECHANICS").reduce((n,j)=>n+jobPaid(j.id),0))}</div></div></div><div class="section"><h3>MECHANIC JOBS</h3><div class="list">${db.jobs.filter(j=>j.type==="MECHANICS").slice().reverse().map(jobCard).join("")||'<div class="card muted">No mechanic jobs.</div>'}</div></div>`}\n'''
-              pos=s.find('function nav(){')
-              if pos<0: raise SystemExit('nav function not found')
-              s=s[:pos]+insert+s[pos:]
-          p.write_text(s,encoding='utf-8')
-          PY
-      - name: Commit
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Restructure app navigation"
-          git push
+      - run: echo "TAUR navigation is integrated; no patch required."
