@@ -1,0 +1,1 @@
+Smoke test targets: module loads, OPEN FILE routes to XIP, timer persists, manual labor hours stay independent, payment records remain compatible.
