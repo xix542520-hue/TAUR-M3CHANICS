@@ -1,0 +1,43 @@
+name: TAUR DATA CONTROLS V1
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - index.html
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  data-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wire TAUR data controls module
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          tag='<script src="taur-data-controls-v1.js"></script>'
+          if tag in s:
+              print('TAUR DATA CONTROLS already wired')
+              raise SystemExit(0)
+          if '</body>' not in s:
+              raise SystemExit('index.html missing </body>')
+          s=s.replace('</body>',tag+'</body>',1)
+          p.write_text(s,encoding='utf-8')
+          print('TAUR DATA CONTROLS wired')
+          PY
+
+      - name: Commit wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Wire TAUR data controls and tip ledger"
+          git push
