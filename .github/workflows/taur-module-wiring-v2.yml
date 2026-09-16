@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'taur-*.js'
+      - 'DETAILING_QC_ENGINE.js'
       - '.github/workflows/taur-module-wiring-v2.yml'
   workflow_dispatch:
 
@@ -28,6 +29,7 @@ jobs:
             '<script src="taur-jobfile-xip-v2.js"></script>',
             '<script src="taur-cloud-sync-v1.js"></script>',
             '<script src="taur-reinvestment-log-v1.js"></script>',
+            '<script src="DETAILING_QC_ENGINE.js"></script>',
           ]
           if '</body>' not in s:
               raise SystemExit('index.html missing </body>')
