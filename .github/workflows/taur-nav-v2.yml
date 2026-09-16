@@ -1,0 +1,39 @@
+name: TAUR navigation v2
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - index.html
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  nav:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch navigation
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old="let xs=[[\"home\",\"HOME\"],[\"jobs\",\"JOBS\"],[\"customers\",\"CUSTOMERS\"],[\"vehicles\",\"VEHICLES\"],[\"detail\",\"DETAIL\"],[\"logbook\",\"LOGBOOK\"],[\"more\",\"SYSTEM\"]];"
+          new="let xs=[[\"home\",\"HOME\"],[\"jobs\",\"JOBS\"],[\"mechanic\",\"MECHANIC\"],[\"detail\",\"DETAIL\"],[\"customers\",\"CUSTOMERS\"],[\"vehicles\",\"VEHICLES\"],[\"more\",\"SYSTEM\"]];"
+          if old not in s:
+              raise SystemExit('navigation pattern not found')
+          s=s.replace(old,new,1)
+          marker='TAUR NAV V2'
+          if marker not in s:
+              s=s.replace('</body>', '<script id="taur-nav-v2">/* TAUR NAV V2 */</script></body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || (git commit -m "Set HOME JOBS MECHANIC DETAIL navigation" && git push)
