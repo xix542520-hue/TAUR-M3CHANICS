@@ -6,7 +6,7 @@
  const SUPABASE_URL='https://pgvicmzjrrqimwftftuj.supabase.co';
  const SUPABASE_KEY='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';
  const KEY='TAUR_M3CHANICS_FINAL_V1';
- const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings'];
+ const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','growth_leads','growth_estimates'];
  let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null;
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const localDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
