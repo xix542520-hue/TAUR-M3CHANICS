@@ -1,0 +1,120 @@
+name: TAUR XIP v1
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - index.html
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  xip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject TAUR XIP efficiency layer
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TAUR XIP V1' in s:
+              print('TAUR XIP V1 already installed')
+              raise SystemExit(0)
+
+          block=r'''<!-- TAUR XIP V1 -->
+          <style id="taur-xip-v1-style">
+          :root{--taur-red:#d71920;--taur-red-dark:#8e1116;--taur-black:#080808;--taur-panel:#111;--taur-line:#303030;--taur-silver:#b9b9b9}
+          .taur-xip-bar{position:fixed;left:10px;right:10px;bottom:67px;z-index:25;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:620px;margin:auto;pointer-events:none}
+          .taur-xip-bar button{pointer-events:auto;min-height:42px;padding:9px 7px;border:1px solid #3a3a3a;background:#151515;box-shadow:0 5px 18px rgba(0,0,0,.35);font-size:11px}
+          .taur-xip-bar button:first-child{background:var(--taur-red);border-color:var(--taur-red);}
+          .taur-xip-label{position:fixed;left:14px;top:76px;z-index:18;background:#171717;border:1px solid #333;border-radius:20px;padding:5px 8px;font-size:8px;font-weight:900;letter-spacing:1.5px;color:#aaa;opacity:.8}
+          .taur-xip-modal{position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.82);display:flex;align-items:flex-end;justify-content:center}
+          .taur-xip-card{width:100%;max-width:640px;max-height:94vh;overflow:auto;background:#101010;border:1px solid #333;border-radius:18px 18px 0 0;padding:17px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(0,0,0,.55)}
+          .taur-xip-title{font-size:18px;font-weight:950;letter-spacing:.5px;margin-bottom:12px}
+          .taur-xip-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+          .taur-xip-full{grid-column:1/-1}
+          .taur-xip-card label{font-size:10px;letter-spacing:.5px;color:#aaa;margin:2px 0 2px}
+          .taur-xip-card input,.taur-xip-card select,.taur-xip-card textarea{margin:2px 0 7px;padding:10px;border-radius:8px}
+          .taur-xip-card textarea{min-height:54px;height:54px}
+          .taur-xip-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
+          .taur-xip-actions button{width:100%;padding:12px}
+          .taur-xip-hint{font-size:10px;color:#888;margin:-1px 0 7px}
+          @media(max-width:420px){.taur-xip-grid{grid-template-columns:1fr}.taur-xip-full{grid-column:auto}}
+          </style>
+          <script id="taur-xip-v1">
+          (()=>{
+            const close=()=>document.querySelector('.taur-xip-modal')?.remove();
+            const escX=x=>typeof esc==='function'?esc(x??''):String(x??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
+            const optionList=(arr,current='')=>arr.map(x=>`<option value="${escX(x)}" ${x===current?'selected':''}>${escX(x)}</option>`).join('');
+            function modal(title,body,saveFn){
+              close();
+              const w=document.createElement('div');w.className='taur-xip-modal';
+              w.innerHTML=`<div class="taur-xip-card"><div class="taur-xip-title">${title}</div>${body}<div class="taur-xip-actions"><button class="secondary" id="xipCancel">CANCEL</button><button id="xipSave">SAVE</button></div></div>`;
+              document.body.appendChild(w);
+              w.addEventListener('click',e=>{if(e.target===w)close()});
+              w.querySelector('#xipCancel').onclick=close;
+              w.querySelector('#xipSave').onclick=()=>saveFn(w);
+              setTimeout(()=>w.querySelector('input,select')?.focus(),25);
+            }
+            const customerOptions=()=>`<option value="">Select customer</option>${db.customers.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(c=>`<option value="${escX(c.id)}">${escX(c.name)}</option>`).join('')}`;
+            const vehicleOptions=cid=>`<option value="">Select vehicle</option>${db.vehicles.filter(v=>!cid||v.customerId===cid).map(v=>`<option value="${escX(v.id)}">${escX(v.year)} ${escX(v.make)} ${escX(v.model)}</option>`).join('')}`;
+            function newJobX(type='MECHANICS'){
+              const detail=type==='DETAILING';
+              const body=`<div class="taur-xip-grid">
+                <div><label>TYPE</label><select id="xType"><option value="MECHANICS" ${!detail?'selected':''}>MECHANIC</option><option value="DETAILING" ${detail?'selected':''}>DETAILING</option></select></div>
+                <div><label>LEAD SOURCE</label><select id="xLead">${optionList(leadSources,'')||'<option>OTHER</option>'}</select></div>
+                <div class="taur-xip-full"><label>CUSTOMER</label><select id="xCustomer">${customerOptions()}</select></div>
+                <div class="taur-xip-full"><label>VEHICLE</label><select id="xVehicle">${vehicleOptions('')}</select></div>
+                <div class="taur-xip-full"><label>SERVICE</label><select id="xTitle">${detail?'<option>Full Detail</option><option>Interior Detail</option><option>Exterior Detail</option><option>Maintenance Detail</option><option>Detail Restoration</option><option>Headlight Restoration</option><option>Other Detailing</option>':'<option>Diagnostic</option><option>Brake Service</option><option>Battery / Starting</option><option>Cooling System</option><option>Electrical</option><option>Suspension / Steering</option><option>Maintenance</option><option>Other Mechanic Service</option>'}</select></div>
+                ${detail?`<div><label>CONDITION</label><select id="xCondition">${optionList(conditions,'C1 — MAINTENANCE')}</select></div><div><label>VEHICLE SIZE</label><select id="xSize">${optionList(sizes,'SEDAN / COUPE')}</select></div>`:''}
+                <div><label>QUOTE / TOTAL</label><input id="xTotal" inputmode="decimal" type="number" min="0" step="0.01" placeholder="0.00"></div>
+                <div><label>FOLLOW-UP</label><input id="xFollow" type="date"></div>
+                <div class="taur-xip-full"><label>COMPLAINT / NOTES</label><textarea id="xComplaint" placeholder="Short description — keep it fast"></textarea></div>
+                <div class="taur-xip-full"><div class="taur-xip-hint">XIP: select what TAUR already knows. Type only what the field actually needs.</div></div>
+              </div>`;
+              modal(detail?'NEW DETAIL JOB':'NEW MECHANIC JOB',body,w=>{
+                const cid=w.querySelector('#xCustomer').value,vid=w.querySelector('#xVehicle').value;
+                const title=w.querySelector('#xTitle').value;
+                if(!cid)return alert('Select a customer.');
+                const id=uid(),now=new Date().toISOString();
+                db.jobs.push({id,created:now,updated:now,type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total:Number(w.querySelector('#xTotal').value||0),warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:[],leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value});
+                save();close();go('jobs');
+              });
+              const cust=document.querySelector('#xCustomer'),veh=document.querySelector('#xVehicle');
+              cust.onchange=()=>{veh.innerHTML=vehicleOptions(cust.value)};
+            }
+            function newCustomerX(){typeof newCustomer==='function'?newCustomer():alert('Customer workflow unavailable.')}
+            function newVehicleX(){typeof newVehicle==='function'?newVehicle():alert('Vehicle workflow unavailable.')}
+            function mount(){
+              if(document.querySelector('.taur-xip-bar'))return;
+              const bar=document.createElement('div');bar.className='taur-xip-bar';
+              bar.innerHTML='<button id="xipJob">+ JOB</button><button id="xipCustomer">+ CUSTOMER</button><button id="xipVehicle">+ VEHICLE</button>';
+              document.body.appendChild(bar);
+              document.getElementById('xipJob').onclick=()=>newJobX();
+              document.getElementById('xipCustomer').onclick=newCustomerX;
+              document.getElementById('xipVehicle').onclick=newVehicleX;
+              const tag=document.createElement('div');tag.className='taur-xip-label';tag.textContent='TAUR XIP';document.body.appendChild(tag);
+            }
+            mount();
+          })();
+          </script>
+          '''
+          if '</body>' not in s: raise SystemExit('index.html missing </body>')
+          s=s.replace('</body>',block+'</body>',1)
+          p.write_text(s,encoding='utf-8')
+          print('TAUR XIP V1 injected')
+          PY
+
+      - name: Commit XIP update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Add TAUR XIP v1 efficiency layer"
+          git push
