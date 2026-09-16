@@ -9,6 +9,12 @@
  const saveX=()=>typeof save==='function'?save():localStorage.setItem('TAUR_M3CHANICS_FINAL_V1',JSON.stringify(db));
  const paymentsFor=id=>db.payments.filter(p=>p.jobId===id);
  const tipFor=id=>paymentsFor(id).reduce((n,p)=>n+Number(p.tip||0),0);
+ const detailQcGate=j=>{
+   if(j?.type!=='DETAILING')return {ok:true};
+   if(typeof taurDetailQcCanCompleteV2!=='function')return {ok:false,reason:'QC ENGINE NOT LOADED'};
+   if(j.qc?.status!=='VERIFIED')return {ok:false,reason:'FINAL QC VERIFICATION REQUIRED'};
+   return {ok:true};
+ };
  function modal(title,body,actions){
    close(); const w=document.createElement('div'); w.className='taur-dc-modal';
    w.innerHTML=`<div class="taur-dc-card"><div class="taur-dc-head"><b>${title}</b><button class="secondary" id="dcClose">CLOSE</button></div>${body}<div class="taur-dc-actions">${actions||''}</div></div>`;
@@ -24,7 +30,15 @@
  function editJob(id){
    const j=job(id);if(!j)return;
    const w=modal('EDIT JOB',`<div class="taur-dc-grid"><div class="taur-dc-full"><label>JOB / SERVICE</label><input id="eTitle" value="${escX(j.title||'')}"></div><div><label>STAGE</label><select id="eStage">${(stages||[]).map(x=>`<option ${x===j.stage?'selected':''}>${escX(x)}</option>`).join('')}</select></div><div><label>STATUS</label><select id="eStatus">${(statuses||[]).map(x=>`<option ${x===j.status?'selected':''}>${escX(x)}</option>`).join('')}</select></div><div><label>QUOTE / TOTAL</label><input id="eTotal" type="number" min="0" step="0.01" value="${Number(j.total||0)}"></div><div><label>LABOR HOURS</label><input id="eHours" type="number" min="0" step="0.1" value="${Number(j.laborHours||0)}"></div><div class="taur-dc-full"><label>NOTES</label><textarea id="eNotes">${escX(j.complaint||'')}</textarea></div><div class="taur-dc-full"><label>FOLLOW-UP</label><input id="eFollow" type="date" value="${escX(j.followUpDate||'')}"></div></div>`,`<button class="secondary" id="dcCancel">CANCEL</button><button id="dcSave">SAVE CHANGES</button>`);
-   w.querySelector('#dcCancel').onclick=close;w.querySelector('#dcSave').onclick=()=>{j.title=w.querySelector('#eTitle').value.trim()||'Untitled Job';j.stage=w.querySelector('#eStage').value;j.status=w.querySelector('#eStatus').value;j.total=Number(w.querySelector('#eTotal').value||0);j.laborHours=Number(w.querySelector('#eHours').value||0);j.complaint=w.querySelector('#eNotes').value.trim();j.followUpDate=w.querySelector('#eFollow').value;j.updated=new Date().toISOString();saveX();close();render()};
+   w.querySelector('#dcCancel').onclick=close;
+   w.querySelector('#dcSave').onclick=()=>{
+     const nextStage=w.querySelector('#eStage').value,nextStatus=w.querySelector('#eStatus').value;
+     if(j.type==='DETAILING'&&(nextStage==='COMPLETE'||nextStatus==='COMPLETE')){
+       const gate=detailQcGate(j);
+       if(!gate.ok)return alert(gate.reason+'. Use VERIFY FINAL QC before completing this detail job.');
+     }
+     j.title=w.querySelector('#eTitle').value.trim()||'Untitled Job';j.stage=nextStage;j.status=nextStatus;j.total=Number(w.querySelector('#eTotal').value||0);j.laborHours=Number(w.querySelector('#eHours').value||0);j.complaint=w.querySelector('#eNotes').value.trim();j.followUpDate=w.querySelector('#eFollow').value;j.updated=new Date().toISOString();saveX();close();render()
+   };
  }
  function delJob(id){const j=job(id);if(!j)return;if(!confirm(`DELETE JOB?\n\n${j.title||'Untitled Job'}\n\nThis removes the job and its payment records from this device.`))return;db.jobs=db.jobs.filter(x=>x.id!==id);db.payments=db.payments.filter(p=>p.jobId!==id);saveX();close();render()}
  function delCustomer(id){const c=customer(id);if(!c)return;const hasJobs=db.jobs.some(j=>j.customerId===id),hasVehicles=db.vehicles.some(v=>v.customerId===id);if(hasJobs||hasVehicles)return alert('This customer has linked vehicles or jobs. Delete those records first so TAUR does not orphan history.');if(!confirm(`DELETE CUSTOMER?\n\n${c.name||'Unnamed customer'}`))return;db.customers=db.customers.filter(x=>x.id!==id);saveX();render()}
