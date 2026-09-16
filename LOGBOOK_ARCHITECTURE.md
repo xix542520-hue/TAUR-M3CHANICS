@@ -1,228 +1,242 @@
-# TAUR LOGBOOK ARCHITECTURE v1.0
+# TAUR LOGBOOK ARCHITECTURE v2.0
 
 ## Core decision
 
-**HOME = TAUR M3CHANICS / MECHANICS.**
+**HOME = the combined TAUR LOGBOOK / business dashboard.**
 
 Detailing is a business division, not a separate customer universe.
 
 Customers and vehicles remain shared records, while each customer can have service activity routed into one or both operational logs.
 
-The system therefore has three views of the same underlying business data:
+The live user-facing structure is:
 
-1. **MECHANICS LOG** — mechanical work
-2. **DETAILING LOG** — detailing work
-3. **TOTAL LOGBOOK** — combined business history and statistics
+**HOME → JOBS → MECHANIC → DETAIL → CUSTOMERS → VEHICLES → SYSTEM**
+
+The underlying business data remains shared:
+
+`CUSTOMER → VEHICLE → JOB → SERVICE → PAYMENT → HISTORY`
 
 ---
 
-# 1. CUSTOMER LOG ROUTING
+# 1. TOP-LEVEL NAVIGATION
 
-When creating or editing a customer, the app should expose:
+### HOME
+Combined business dashboard and total logbook.
 
-**CUSTOMER LOG**
+Shows:
+- Active jobs
+- Total jobs
+- Customers
+- Collected money
+- Mechanic job count
+- Detail job count
+- Total job value
+- Outstanding balance
+- Active logbook
+- Recent job history
+
+### JOBS
+All jobs in one searchable operational list.
+
+### MECHANIC
+Mechanical jobs only.
+
+### DETAIL
+Detailing jobs only.
+
+### CUSTOMERS
+One shared customer database.
+
+### VEHICLES
+One shared vehicle database.
+
+### SYSTEM
+Administration, settings, tools, data controls, and business utilities.
+
+**Important:** Do not create a separate customer database for mechanics and detailing.
+
+---
+
+# 2. CUSTOMER LOG ROUTING
+
+When creating or editing a customer, expose:
+
+**SERVICE LOG**
 
 - MECHANICS
 - DETAILING
 - BOTH
 
-This is a routing/preference field, not a duplicate customer record.
+This is routing/preference metadata, not a duplicate customer record.
 
-Recommended data field:
-
-`customer.serviceLogs[]`
-
-Allowed values:
-
-`MECHANICS`, `DETAILING`
-
-A customer may belong to both.
-
-### Important rule
-
-Selecting a log must **never create a second customer record**.
+A customer marked BOTH still exists exactly once.
 
 Example:
 
 John Smith
-- Mechanics log: YES
-- Detailing log: YES
+- Mechanics: YES
+- Detailing: YES
 
-There is still exactly one John Smith record.
-
-His jobs are classified independently:
+His jobs remain independently classified:
 
 - Brake diagnosis → `MECHANICS`
 - Interior detail → `DETAILING`
 
-Both appear in the Total Logbook.
+Both appear in HOME's combined logbook.
 
 ---
 
-# 2. NEW CUSTOMER UX
+# 3. CUSTOMER → JOB RULE
 
-The customer creation screen should become:
+Customer routing controls **visibility/access**.
 
-- Name
-- Phone
-- Email
-- **SERVICE LOG** selector
-  - MECHANICS
-  - DETAILING
-  - BOTH
-- Notes
-- Save Customer
+Job type controls **operational classification and statistics**.
 
-Default behavior may be `MECHANICS` for backward compatibility with existing mechanical customers, but the user must be able to change it.
+### Mechanical job
+`type = MECHANICS`
+
+### Detailing job
+`type = DETAILING`
+
+Existing jobs are never moved or duplicated when customer routing changes.
 
 ---
 
-# 3. CUSTOMER PROFILE
+# 4. CUSTOMER PROFILE
 
-A customer profile should show:
+A customer profile remains unified and should expose service history by division:
 
-**LOG ACCESS**
-
-`MECHANICS` / `DETAILING` / `BOTH`
-
-Then show service history grouped by division:
-
-### MECHANICS HISTORY
+### MECHANIC HISTORY
 Mechanical jobs only.
 
-### DETAILING HISTORY
+### DETAIL HISTORY
 Detailing jobs only.
 
 ### TOTAL HISTORY
 All jobs chronologically.
 
-The profile remains one unified customer record.
+The profile is one customer record with multiple service histories.
 
 ---
 
-# 4. HOME — MECHANICS
+# 5. MECHANIC VIEW
 
-The existing `home` view remains the **MECHANICS** operating dashboard.
+The dedicated **MECHANIC** view contains mechanical jobs only.
 
-Its statistics should be mechanical-only where the metric is division-specific:
+Division-specific metrics may include:
 
 - Active mechanic jobs
-- Mechanical job value
+- Total mechanic jobs
 - Mechanical collected
 - Mechanical outstanding
-- Mechanical customers / relevant records
-- Mechanical active work
+- Mechanical job value
+- Mechanical work queue
 
-A detailing job should not inflate a mechanics-only KPI.
-
----
-
-# 5. DETAILING LOG
-
-The existing `detail` view becomes the **DETAILING LOG**.
-
-Detailing-only metrics:
-
-- Active detail jobs
-- Detail job value
-- Detail collected
-- Detail outstanding
-- Detail jobs
-- Detail queue
-
-It uses the same customers and vehicles as Home.
+A detailing job must not inflate mechanic-only KPIs.
 
 ---
 
-# 6. TOTAL LOGBOOK
+# 6. DETAIL VIEW
 
-Add a dedicated **TOTAL LOGBOOK** view.
+The dedicated **DETAIL** view contains detailing jobs only.
 
-This is the combined business ledger.
+Detail-specific operations include the detailing workflow and final QC verification.
 
-It must combine both divisions without duplicating records.
+Detail jobs use:
+
+- Service family
+- Condition classification C1–C4
+- Vehicle size
+- Add-ons
+- Quote/job total
+- Labor information
+- Detail QC checklist
+- Final QC verification
+
+A detailing job cannot be completed until final QC is verified.
+
+---
+
+# 7. HOME — TOTAL LOGBOOK
+
+HOME is the combined business dashboard and logbook.
+
+It aggregates shared records exactly once.
 
 ### Combined KPI layer
 
-- Total customers
-- Total vehicles
-- Total jobs
 - Active jobs
-- Total job value
+- Total jobs
+- Total customers
 - Total collected
+- Total job value
 - Total outstanding
 - Mechanics job count
 - Detailing job count
-- Mechanics revenue/value
-- Detailing revenue/value
 
 ### Combined history
 
-Chronological list of all jobs:
+All jobs appear in one chronological operational history.
 
-`DATE → DIVISION → CUSTOMER → VEHICLE → SERVICE → STATUS → VALUE → PAID`
+Each job identifies its division with a badge:
 
-Division badge:
-
-- `MECHANICS`
+- `MECHANIC`
 - `DETAILING`
 
----
-
-# 7. LOGBOOK NAVIGATION
-
-The app should expose the division choice clearly rather than hiding it inside the System menu.
-
-Proposed top-level structure:
-
-- **HOME** — Mechanics
-- **DETAIL** — Detailing
-- **LOGBOOK** — Combined
-- **CUSTOMERS** — Shared
-- **VEHICLES** — Shared
-- **SYSTEM** — Administration
-
-If screen width requires fewer bottom-nav buttons, Logbook can live in a top-level command card on Home/Detail, but it must remain one-tap accessible.
+The stored compatibility value may remain `MECHANICS`; the user-facing label is **MECHANIC**.
 
 ---
 
-# 8. CUSTOMER → JOB ROUTING
+# 8. FINANCIAL RULE
 
-Creating a job should determine its division explicitly.
+**JOB TYPE IS THE SOURCE OF TRUTH FOR DIVISION STATISTICS.**
 
-### Mechanical job
+Never calculate revenue or job counts from customer routing.
 
-`type = MECHANICS`
+For each job:
 
-### Detailing job
+- Value = `job.total`
+- Collected = payments linked to that job
+- Outstanding = `max(0, value − collected)`
 
-`type = DETAILING`
+Aggregate from the shared job/payment records.
 
-The customer selected for the job should automatically become associated with that division if not already associated.
-
-Example:
-
-Customer currently has:
-
-`serviceLogs = [MECHANICS]`
-
-User creates a detailing job.
-
-System may update to:
-
-`serviceLogs = [MECHANICS, DETAILING]`
-
-This prevents the routing selector from becoming stale.
+There is no separate mechanic payment ledger and no separate detailing payment ledger.
 
 ---
 
-# 9. DATA MODEL
+# 9. DETAILING QUALITY GATE
 
-Current shared architecture remains:
+Detailing completion follows:
+
+`INSPECT → CLASSIFY → QUOTE → EXECUTE → VERIFY → COMPLETE`
+
+The QC engine requires all defined checklist items to pass before final verification.
+
+Current checklist categories include:
+
+- Interior inspected
+- Exterior inspected
+- Glass inspected
+- Wheels / tires inspected
+- Stains / spots addressed or documented
+- Customer-specific concerns addressed
+- Before / after documentation captured
+- Final condition notes recorded
+
+C4 jobs additionally require inspection handling before verification.
+
+Completion must be gated consistently across every edit/status path.
+
+---
+
+# 10. DATA MODEL
+
+Shared architecture:
 
 `CUSTOMER → VEHICLE → JOB → QUOTE → PAYMENT → HISTORY`
 
-Add only the routing metadata necessary for division visibility:
+Customer routing metadata is auxiliary:
 
 ```text
 customer
@@ -230,108 +244,109 @@ customer
 ├── name
 ├── phone
 ├── email
-├── serviceLogs[]
+├── logRouting
 ├── notes
 └── created
 ```
 
-Jobs already have:
+Jobs remain authoritative for division:
 
 `job.type = MECHANICS | DETAILING`
 
-That job-level type remains authoritative for financial and operational statistics.
-
-Customer `serviceLogs` is an access/routing aid; it is not the source of truth for revenue.
+No division-specific customer database is permitted.
 
 ---
 
-# 10. STATISTICS RULE
+# 11. MIGRATION RULE
 
-**JOB TYPE IS THE SOURCE OF TRUTH FOR DIVISION STATS.**
+Existing customers may not contain routing metadata.
 
-Do not calculate mechanical/detailing revenue from customer routing.
-
-Calculate from jobs:
-
-`job.type === "MECHANICS"`
-
-or
-
-`job.type === "DETAILING"`
-
-This prevents a customer marked `BOTH` from causing duplicate revenue or job counts.
-
----
-
-# 11. TOTAL LOGBOOK FINANCIAL RULE
-
-Combined totals are calculated exactly once from the shared job/payment records.
-
-For each job:
-
-- Value = job total
-- Collected = payments linked to that job
-- Outstanding = max(0, value − collected)
-
-Then aggregate all jobs.
-
-No division gets its own duplicate payment ledger.
-
----
-
-# 12. MIGRATION RULE
-
-Existing customer records may not have `serviceLogs`.
-
-On load:
-
-- Existing customers with mechanical jobs → add `MECHANICS`
-- Existing customers with detailing jobs → add `DETAILING`
-- Existing customers with both → add both
-- Existing customers with no jobs → preserve backward-compatible default until selected
+On load, preserve existing records and use backward-compatible defaults.
 
 Existing jobs remain unchanged.
 
-No historical job should be duplicated during migration.
+No historical job, customer, vehicle, or payment should be duplicated during migration.
 
 ---
 
-# 13. UX PRINCIPLE
+# 12. CLOUD / DEVICE RULE
 
-The user should never have to wonder:
+Local storage acts as the device cache.
 
-> "Which customer database am I putting this person into?"
+The shared cloud workspace synchronizes the shared business collections:
+
+- customers
+- vehicles
+- jobs
+- quotes
+- payments
+- parts
+- pricing
+- tools
+- research
+- settings
+
+The architecture remains intentionally simple: one shared workspace and one shared record model rather than separate division databases.
+
+---
+
+# 13. MONEY LOG RULE
+
+TAUR maintains two distinct reinvestment logs:
+
+### BUSINESS REVENUE → BUSINESS
+Money generated by recorded TAUR jobs and reinvested into:
+
+- Supplies
+- Equipment
+- Gas
+- Other
+
+The entry retains a source-job reference for traceability.
+
+### OUTSIDE MONEY → BUSINESS
+Money originating outside TAUR business revenue and invested into the business.
+
+Outside money must remain separate from business-generated reinvestment.
+
+---
+
+# 14. UX PRINCIPLE
+
+The user should never have to wonder which customer database to use.
 
 There is **one customer database**.
 
 The UI answers:
 
-> "Which service log does this customer use?"
+> Which service log does this customer use?
 
-And the system answers:
+The job answers:
 
-> "Which division does this job belong to?"
+> Which division does this work belong to?
 
-Then the Total Logbook answers:
+HOME answers:
 
-> "What has the entire TAUR business done?"
+> What has the entire TAUR business done?
 
 ---
 
-# 14. NEXT IMPLEMENTATION
+# 15. CURRENT IMPLEMENTATION STATUS
 
-Implement in this order:
+The live navigation is:
 
-1. Add `customer.serviceLogs[]` normalization.
-2. Add service-log selector to New Customer.
-3. Add service-log selector to Edit Customer.
-4. Add division sections to Customer Profile.
-5. Keep Home as Mechanics.
-6. Keep Detail as Detailing.
-7. Add **LOGBOOK** view.
-8. Add combined KPI calculations from shared jobs/payments.
-9. Add chronological combined job ledger.
-10. Add logbook navigation.
-11. Run system audit against old V4/V5/local data.
+**HOME → JOBS → MECHANIC → DETAIL → CUSTOMERS → VEHICLES → SYSTEM**
 
-**One database. Two operational logs. One total logbook.**
+HOME is the combined logbook/dashboard.
+
+MECHANIC is the mechanical operating view.
+
+DETAIL is the detailing operating view.
+
+CUSTOMERS and VEHICLES are shared.
+
+Detailing QC is integrated into the Job File and completion paths.
+
+Central module wiring maintains the shared TAUR scripts in `index.html` without competing auto-injector workflows.
+
+**One database. Two operational divisions. One total logbook.**
