@@ -30,6 +30,7 @@ jobs:
             '<script src="taur-cloud-sync-v1.js"></script>',
             '<script src="taur-reinvestment-log-v1.js"></script>',
             '<script src="DETAILING_QC_ENGINE.js"></script>',
+            '<script src="taur-operations-v1.js"></script>',
           ]
           if '</body>' not in s:
               raise SystemExit('index.html missing </body>')
