@@ -1,39 +1,15 @@
-name: TAUR CLOUD SYNC V1
+name: TAUR CLOUD SYNC V1 (ARCHIVED)
 
+# Cloud runtime remains active through taur-cloud-sync-v1.js.
+# Module wiring is centralized in taur-module-wiring-v2.yml.
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - index.html
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  cloud:
+  archived:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Wire cloud module
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          tag='<script src="taur-cloud-sync-v1.js"></script>'
-          if tag not in s:
-              if '</body>' not in s: raise SystemExit('index.html missing </body>')
-              s=s.replace('</body>',tag+'</body>',1)
-              p.write_text(s,encoding='utf-8')
-          else:
-              print('TAUR CLOUD already wired')
-          PY
-      - name: Commit wiring
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Wire TAUR shared cloud sync"
-          git push
+      - run: echo "TAUR cloud module wiring is centralized; no legacy patch required."
