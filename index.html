@@ -14,8 +14,8 @@ button{border:0;border-radius:9px;background:var(--red);color:white;font-weight:
 input,select,textarea{width:100%;background:#0c0c0c;border:1px solid #383838;color:#eee;border-radius:8px;padding:11px;margin:5px 0 9px;font:inherit}textarea{min-height:90px;resize:vertical}label{font-size:11px;color:#aaa;display:block;margin-top:4px}
 .list{display:grid;gap:9px}.badge{display:inline-block;background:#272727;border-radius:20px;padding:4px 7px;font-size:10px;font-weight:900}.redbadge{background:#4b1014}
 .total{font-size:22px;font-weight:900}.small{font-size:11px}.success{color:#8ed18e}.warn{color:#e5bd69}
-nav{position:fixed;z-index:30;bottom:0;left:0;right:0;background:#0d0d0d;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom)}
-nav button{background:#0d0d0d;color:#999;border-radius:0;padding:11px 2px;font-size:9px;border-top:2px solid transparent}nav button.active{color:#fff;border-top-color:var(--red);background:#171717}
+nav{position:fixed;z-index:30;bottom:0;left:0;right:0;background:#0d0d0d;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:#0d0d0d;color:#999;border-radius:0;padding:11px 2px;font-size:8px;border-top:2px solid transparent}nav button.active{color:#fff;border-top-color:var(--red);background:#171717}
 .progress{height:8px;background:#252525;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--red)}
 .kpi{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #242424}.hide{display:none}.wide{width:100%}
 </style></head><body>
@@ -26,20 +26,24 @@ const KEY="TAUR_M3CHANICS_FINAL_V1";
 const defaults={customers:[],vehicles:[],jobs:[],quotes:[],payments:[],parts:[],pricing:[],tools:[],research:[],settings:{business:"TAUR M3CHANICS"}};
 let db=JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(localStorage.getItem("TAUR_M3CHANICS_v5")||localStorage.getItem("TAUR_M3CHANICS_v4")||JSON.stringify(defaults));
 Object.keys(defaults).forEach(k=>{if(db[k]===undefined)db[k]=Array.isArray(defaults[k])?[]:defaults[k]});
-db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=j.status||"OPEN";j.total=Number(j.total||0);j.warranty=j.warranty||"";j.approval=j.approval||{status:"NOT REQUESTED",at:"",method:"",note:""};j.updated=j.updated||j.created||new Date().toISOString()});
+db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=j.status||"OPEN";j.total=Number(j.total||0);j.warranty=j.warranty||"";j.approval=j.approval||{status:"NOT REQUESTED",at:"",method:"",note:""};j.updated=j.updated||j.created||new Date().toISOString();j.type=j.type||"MECHANICS";j.serviceFamily=j.serviceFamily||"";j.condition=j.condition||"";j.vehicleSize=j.vehicleSize||"";j.addOns=j.addOns||[];j.leadSource=j.leadSource||"";j.laborHours=Number(j.laborHours||0);j.travelMinutes=Number(j.travelMinutes||0);j.materialsCost=Number(j.materialsCost||0);j.followUpDate=j.followUpDate||""});
 db.quotes.forEach(q=>{q.status=q.status||"DRAFT";q.total=Number(q.total||0)});
 db.payments.forEach(x=>{x.amount=Number(x.amount||0)});
 if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(db));
 const stages=["INTAKE","DIAGNOSE","ESTIMATE","APPROVED","REPAIR","VERIFY","COMPLETE"];
 const statuses=["OPEN","IN PROGRESS","WAITING","COMPLETE","CANCELLED"];
+const serviceFamilies=["A — MAINTENANCE","B — RESTORATION","C — SPECIALTY / ADD-ONS"];
+const conditions=["C1 — MAINTENANCE","C2 — MODERATE","C3 — HEAVY","C4 — EXTREME / INSPECTION REQUIRED"];
+const sizes=["COMPACT","SEDAN / COUPE","SUV / CROSSOVER","TRUCK / LARGE SUV","VAN / OVERSIZE"];
+const leadSources=["D2D","CARD","REFERRAL","ONLINE","EXISTING TAUR CUSTOMER","OTHER"];
 const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const save=()=>localStorage.setItem(KEY,JSON.stringify(db));
 const C=id=>db.customers.find(x=>x.id===id), V=id=>db.vehicles.find(x=>x.id===id), J=id=>db.jobs.find(x=>x.id===id), Q=id=>db.quotes.find(x=>x.id===id);
 let view="home";
 
-function render(){nav();let a=$("app");({home,customers,vehicles,jobs,more}[view]||home)(a)}
-function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["more","SYSTEM"]];$("nav").innerHTML=xs.map(x=>`<button class="${view===x[0]?'active':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
+function render(){nav();let a=$("app");({home,customers,vehicles,jobs,detail,more}[view]||home)(a)}
+function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["detail","DETAIL"],["more","SYSTEM"]];$("nav").innerHTML=xs.map(x=>`<button class="${view===x[0]?'active':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
 function go(v){view=v;render()}
 function money(n){return "$"+Number(n||0).toFixed(2)}
 function jobPaid(id){return db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)}
@@ -47,9 +51,10 @@ function jobBalance(id){let j=J(id);return Math.max(0,Number(j?.total||0)-jobPai
 function jobName(j){return `${esc(j.title||"Untitled Job")}`}
 function vehicleName(v){return v?`${esc(v.year)} ${esc(v.make)} ${esc(v.model)}`:"No vehicle"}
 function jobCard(j){let c=C(j.customerId),v=V(j.vehicleId),paid=jobPaid(j.id);return `<div class="item">
-<div class="row"><b>${jobName(j)}</b><span class="badge ${j.stage!=="COMPLETE"?'redbadge':''}">${esc(j.stage)}</span></div>
+<div class="row"><b>${jobName(j)}</b><span><span class="badge">${esc(j.type||"MECHANICS")}</span> <span class="badge ${j.stage!=="COMPLETE"?'redbadge':''}">${esc(j.stage)}</span></span></div>
 <div class="muted">${esc(c?.name||"No customer")} • ${vehicleName(v)}</div>
 <div class="small" style="margin-top:7px">${esc(j.complaint||"No complaint entered")}</div>
+${j.type==="DETAILING"?`<div class="small" style="margin-top:6px">${esc(j.condition||"Condition unclassified")} • ${esc(j.vehicleSize||"Size unclassified")}</div>`:""}
 <div class="row" style="margin-top:10px"><span class="small">Total ${money(j.total)} • Paid ${money(paid)}</span><button class="ghost" onclick="jobFile('${j.id}')">OPEN FILE</button></div></div>`}
 
 function home(a){
@@ -72,7 +77,13 @@ function vehicleCard(v){return `<div class="item"><b>${vehicleName(v)}</b><div c
 function filterVehicles(q){q=q.toLowerCase();$("vl").innerHTML=db.vehicles.slice().reverse().filter(v=>(v.year+v.make+v.model+v.mileage+(C(v.customerId)?.name||"")).toLowerCase().includes(q)).map(vehicleCard).join("")}
 
 function jobs(a){a.innerHTML=`<div class="row"><h2>JOBS</h2><button onclick="newJob()">+ NEW JOB</button></div><input placeholder="Search jobs, customers, vehicles..." oninput="filterJobs(this.value)"><div id="jl" class="list">${db.jobs.slice().reverse().map(jobCard).join("")||'<div class="card muted">No jobs.</div>'}</div>`}
-function filterJobs(q){q=q.toLowerCase();$("jl").innerHTML=db.jobs.slice().reverse().filter(j=>(j.title+j.complaint+j.stage+j.status+(C(j.customerId)?.name||"")+(V(j.vehicleId)?.model||"")).toLowerCase().includes(q)).map(jobCard).join("")}
+function filterJobs(q){q=q.toLowerCase();$("jl").innerHTML=db.jobs.slice().reverse().filter(j=>(j.title+j.complaint+j.stage+j.status+j.type+(C(j.customerId)?.name||"")+(V(j.vehicleId)?.model||"")).toLowerCase().includes(q)).map(jobCard).join("")}
+
+function detail(a){let dj=db.jobs.filter(j=>j.type==="DETAILING"),active=dj.filter(j=>j.stage!=="COMPLETE"&&j.status!=="CANCELLED").length,rev=dj.reduce((n,j)=>n+Number(j.total||0),0),paid=dj.reduce((n,j)=>n+jobPaid(j.id),0);a.innerHTML=`<div class="row"><h2>TAUR DETAILING</h2><button onclick="newDetailJob()">+ DETAIL JOB</button></div>
+<div class="grid"><div class="card"><div class="stat">${active}</div><div class="muted">ACTIVE DETAILS</div></div><div class="card"><div class="stat">${money(rev)}</div><div class="muted">DETAIL VALUE</div></div><div class="card"><div class="stat">${money(paid)}</div><div class="muted">DETAIL COLLECTED</div></div><div class="card"><div class="stat">${dj.length}</div><div class="muted">DETAIL JOBS</div></div></div>
+<section class="section"><h3>SERVICE ARCHITECTURE</h3><div class="grid">${serviceFamilies.map((x,i)=>`<div class="item"><b>${x}</b><div class="muted" style="margin-top:6px">${["Routine cleaning and preservation.","Buildup, stains, neglected interiors/exteriors, and recovery work.","Targeted upgrades and add-on procedures."][i]}</div></div>`).join("")}</div></section>
+<section class="section"><h3>CONDITION CLASSIFICATION</h3><div class="grid">${conditions.map((x,i)=>`<div class="item"><b>${x}</b><div class="muted" style="margin-top:6px">${["Routine maintenance; normal labor.","Noticeable buildup; extra labor required.","Significant contamination, stains, or buildup.","Inspect before fixed quote; scope must be established first."][i]}</div></div>`).join("")}</div><div class="card" style="margin-top:10px"><b>RULE: CONDITION BEATS VEHICLE TYPE.</b><div class="muted" style="margin-top:5px">Condition classification determines labor requirement; vehicle type determines base capacity.</div></div></section>
+<section class="section"><h3>DETAIL QUEUE</h3><div class="list">${dj.slice().reverse().map(jobCard).join("")||'<div class="card muted">No detailing jobs yet. Build the first one from + DETAIL JOB.</div>'}</div></section>`}
 
 function more(a){a.innerHTML=`<h2>SYSTEM</h2><div class="list">
 <div class="item"><h3>WORKFLOW</h3><div class="muted">INTAKE → DIAGNOSE → ESTIMATE → APPROVED → REPAIR → VERIFY → COMPLETE</div><button style="margin-top:9px" onclick="workflow()">OPEN WORKFLOW</button></div>
@@ -104,27 +115,33 @@ function vehicleFile(id){let v=V(id),js=db.jobs.filter(j=>j.vehicleId===id);form
 function customerOptions(sel=""){return `<option value="">Select customer</option>`+db.customers.map(c=>`<option value="${c.id}" ${c.id===sel?"selected":""}>${esc(c.name)}</option>`).join("")}
 function vehicleOptions(sel=""){return `<option value="">Select vehicle</option>`+db.vehicles.map(v=>`<option value="${v.id}" ${v.id===sel?"selected":""}>${esc(v.year)} ${esc(v.make)} ${esc(v.model)} — ${esc(C(v.customerId)?.name||"")}</option>`).join("")}
 function newJob(){form("NEW JOB",`<input id="t" placeholder="Job title / service"><select id="c">${customerOptions()}</select><select id="v">${vehicleOptions()}</select><textarea id="co" placeholder="CUSTOMER COMPLAINT / CONCERN"></textarea><textarea id="dn" placeholder="DIAGNOSTIC EVIDENCE / TESTS / DTCs"></textarea><textarea id="rn" placeholder="REPAIR / COMPLETION NOTES"></textarea><input id="tot" type="number" step=".01" placeholder="Estimated / agreed total"><select id="st">${stages.map(s=>`<option>${s}</option>`).join("")}</select><select id="ss">${statuses.map(s=>`<option>${s}</option>`).join("")}</select><button class="wide" onclick="saveJob()">CREATE JOB</button>`)}
-function saveJob(){let x={id:uid(),title:$("t").value,customerId:$("c").value,vehicleId:$("v").value,complaint:$("co").value,diagnostic:$("dn").value,repair:$("rn").value,total:Number($("tot").value||0),stage:$("st").value,status:$("ss").value,created:new Date().toISOString(),updated:new Date().toISOString(),warranty:"",paymentStatus:"UNPAID"};if(!x.title)return alert("Job title required.");db.jobs.push(x);save();jobFile(x.id)}
+function saveJob(){let x={id:uid(),title:$("t").value,customerId:$("c").value,vehicleId:$("v").value,complaint:$("co").value,diagnostic:$("dn").value,repair:$("rn").value,total:Number($("tot").value||0),stage:$("st").value,status:$("ss").value,created:new Date().toISOString(),updated:new Date().toISOString(),warranty:"",paymentStatus:"UNPAID",type:"MECHANICS",serviceFamily:"",condition:"",vehicleSize:"",addOns:[],leadSource:"",laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:""};if(!x.title)return alert("Job title required.");db.jobs.push(x);save();jobFile(x.id)}
+
+function newDetailJob(){form("NEW DETAIL JOB",`<div class="card"><b>TAUR DETAILING</b><div class="muted" style="margin-top:5px">Inspect → classify → quote → execute → verify.</div></div><input id="t" placeholder="Detail service / job title"><select id="c">${customerOptions()}</select><select id="v">${vehicleOptions()}</select><label>Service family</label><select id="sf">${serviceFamilies.map(x=>`<option>${x}</option>`).join("")}</select><label>Condition classification</label><select id="cn">${conditions.map(x=>`<option>${x}</option>`).join("")}</select><label>Vehicle size</label><select id="sz">${sizes.map(x=>`<option>${x}</option>`).join("")}</select><label>Lead source</label><select id="ls"><option value="">Select lead source</option>${leadSources.map(x=>`<option>${x}</option>`).join("")}</select><textarea id="co" placeholder="CUSTOMER REQUEST / CONDITION NOTES"></textarea><textarea id="rn" placeholder="INCLUDED PROCEDURES / EXCLUSIONS / QC NOTES"></textarea><input id="ao" placeholder="Add-ons (comma separated)"><input id="lh" type="number" step="0.1" placeholder="Labor hours target / actual"><input id="tm" type="number" step="1" placeholder="Travel minutes"><input id="mc" type="number" step=".01" placeholder="Materials cost"><input id="tot" type="number" step=".01" placeholder="Quote / agreed total"><label>Follow-up date</label><input id="fd" type="date"><button class="wide" onclick="saveDetailJob()">CREATE DETAIL JOB</button>`)}
+function saveDetailJob(){let x={id:uid(),title:$("t").value.trim(),customerId:$("c").value,vehicleId:$("v").value,complaint:$("co").value,diagnostic:"",repair:$("rn").value,total:Number($("tot").value||0),stage:"INTAKE",status:"OPEN",created:new Date().toISOString(),updated:new Date().toISOString(),warranty:"",paymentStatus:"UNPAID",approval:{status:"NOT REQUESTED",at:"",method:"",note:""},type:"DETAILING",serviceFamily:$("sf").value,condition:$("cn").value,vehicleSize:$("sz").value,addOns:$("ao").value.split(",").map(x=>x.trim()).filter(Boolean),leadSource:$("ls").value,laborHours:Number($("lh").value||0),travelMinutes:Number($("tm").value||0),materialsCost:Number($("mc").value||0),followUpDate:$("fd").value};if(!x.title)return alert("Detail job title required.");db.jobs.push(x);save();jobFile(x.id)}
+
 function jobFile(id){let j=J(id),c=C(j.customerId),v=V(j.vehicleId),paid=db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0),out=Math.max(0,Number(j.total)-paid);form("JOB FILE",`
 <div class="grid"><div class="card"><div class="muted">CUSTOMER</div><b>${esc(c?.name||"Unassigned")}</b></div><div class="card"><div class="muted">VEHICLE</div><b>${vehicleName(v)}</b></div></div>
-<section class="section"><div class="row"><h3>${jobName(j)}</h3><span class="badge ${j.stage!=="COMPLETE"?'redbadge':''}">${esc(j.stage)}</span></div>
+<section class="section"><div class="row"><h3>${jobName(j)}</h3><span><span class="badge">${esc(j.type||"MECHANICS")}</span> <span class="badge ${j.stage!=="COMPLETE"?'redbadge':''}">${esc(j.stage)}</span></span></div>
 <div class="progress"><i style="width:${((stages.indexOf(j.stage)+1)/stages.length)*100}%"></i></div></section>
+${j.type==="DETAILING"?`<section class="section"><div class="card"><div class="kpi"><span>Service family</span><b>${esc(j.serviceFamily)}</b></div><div class="kpi"><span>Condition</span><b>${esc(j.condition)}</b></div><div class="kpi"><span>Vehicle size</span><b>${esc(j.vehicleSize)}</b></div><div class="kpi"><span>Lead source</span><b>${esc(j.leadSource||"—")}</b></div><div class="kpi"><span>Labor hours</span><b>${Number(j.laborHours||0).toFixed(1)}</b></div><div class="kpi"><span>Travel minutes</span><b>${Number(j.travelMinutes||0)}</b></div><div class="kpi"><span>Materials cost</span><b>${money(j.materialsCost)}</b></div><div class="kpi"><span>Add-ons</span><b>${esc((j.addOns||[]).join(", ")||"None")}</b></div></div></section>`:""}
 <label>Workflow stage</label><select id="st">${stages.map(s=>`<option ${s===j.stage?"selected":""}>${s}</option>`).join("")}</select>
 <label>Job status</label><select id="ss">${statuses.map(s=>`<option ${s===j.status?"selected":""}>${s}</option>`).join("")}</select>
-<label>Customer complaint</label><textarea id="co">${esc(j.complaint)}</textarea>
+<label>Customer complaint / request</label><textarea id="co">${esc(j.complaint)}</textarea>
 <label>Diagnostic evidence</label><textarea id="dn">${esc(j.diagnostic)}</textarea>
-<label>Repair / verification notes</label><textarea id="rn">${esc(j.repair)}</textarea>
+<label>Repair / completion / QC notes</label><textarea id="rn">${esc(j.repair)}</textarea>
 <label>Customer approval</label>
 <select id="ap"><option ${j.approval?.status==="NOT REQUESTED"?"selected":""}>NOT REQUESTED</option><option ${j.approval?.status==="PENDING"?"selected":""}>PENDING</option><option ${j.approval?.status==="APPROVED"?"selected":""}>APPROVED</option><option ${j.approval?.status==="DECLINED"?"selected":""}>DECLINED</option></select>
 <input id="am" placeholder="Approval method / reference" value="${esc(j.approval?.method||"")}">
 <textarea id="an" placeholder="Approval note / authorization record">${esc(j.approval?.note||"")}</textarea>
 <label>Warranty / workmanship note</label><textarea id="wa">${esc(j.warranty)}</textarea>
 <label>Job total</label><input id="tot" type="number" step=".01" value="${esc(j.total)}">
+${j.type==="DETAILING"?`<label>Follow-up date</label><input id="fd" type="date" value="${esc(j.followUpDate||"")}">`:""}
 <div class="card"><div class="kpi"><span>Total</span><b>${money(j.total)}</b></div><div class="kpi"><span>Paid</span><b>${money(paid)}</b></div><div class="kpi"><span>Outstanding</span><b>${money(out)}</b></div></div>
 <div class="row"><button onclick="saveJobFile('${id}')">SAVE JOB</button><button class="secondary" onclick="quoteFromJob('${id}')">QUOTE</button><button class="secondary" onclick="paymentFor('${id}')">PAYMENT</button></div>
 <div class="row" style="margin-top:8px"><button class="ghost" onclick="advance('${id}')">ADVANCE WORKFLOW →</button><button class="danger" onclick="delJob('${id}')">DELETE</button></div>`)}
 
-function saveJobFile(id){let j=J(id);Object.assign(j,{stage:$("st").value,status:$("ss").value,complaint:$("co").value,diagnostic:$("dn").value,repair:$("rn").value,warranty:$("wa").value,total:Number($("tot").value||0),updated:new Date().toISOString(),approval:{status:$("ap").value,method:$("am").value,note:$("an").value,at:$("ap").value==="APPROVED"?(j.approval?.at||new Date().toISOString()):""}});save();jobFile(id)}
+function saveJobFile(id){let j=J(id);Object.assign(j,{stage:$("st").value,status:$("ss").value,complaint:$("co").value,diagnostic:$("dn").value,repair:$("rn").value,warranty:$("wa").value,total:Number($("tot").value||0),updated:new Date().toISOString(),approval:{status:$("ap").value,method:$("am").value,note:$("an").value,at:$("ap").value==="APPROVED"?(j.approval?.at||new Date().toISOString()):""}});if(j.type==="DETAILING")j.followUpDate=$("fd")?.value||j.followUpDate||"";save();jobFile(id)}
 function advance(id){let j=J(id),i=stages.indexOf(j.stage);if(i<stages.length-1){j.stage=stages[i+1];j.status=j.stage==="COMPLETE"?"COMPLETE":"IN PROGRESS";save();jobFile(id)}}
 function delJob(id){if(confirm("Delete this job and its local record?")){db.jobs=db.jobs.filter(j=>j.id!==id);db.quotes=db.quotes.filter(q=>q.jobId!==id);db.payments=db.payments.filter(p=>p.jobId!==id);save();render()}}
 
@@ -146,15 +163,14 @@ function audit(){
 let issues=[],seen=new Set();
 ["customers","vehicles","jobs","quotes","payments","parts","pricing","tools","research"].forEach(k=>db[k].forEach(x=>{if(!x.id)issues.push(`${k}: record without ID`);else if(seen.has(x.id))issues.push(`${k}: duplicate ID ${x.id}`);else seen.add(x.id)}));
 db.vehicles.forEach(v=>{if(v.customerId&&!C(v.customerId))issues.push(`Vehicle ${v.id}: missing customer link`)});
-db.jobs.forEach(j=>{if(j.customerId&&!C(j.customerId))issues.push(`Job ${j.id}: missing customer link`);if(j.vehicleId&&!V(j.vehicleId))issues.push(`Job ${j.id}: missing vehicle link`);if(Number(j.total)<0)issues.push(`Job ${j.id}: negative total`);if(!stages.includes(j.stage))issues.push(`Job ${j.id}: invalid workflow stage`)});
+db.jobs.forEach(j=>{if(j.customerId&&!C(j.customerId))issues.push(`Job ${j.id}: missing customer link`);if(j.vehicleId&&!V(j.vehicleId))issues.push(`Job ${j.id}: missing vehicle link`);if(Number(j.total)<0)issues.push(`Job ${j.id}: negative total`);if(!stages.includes(j.stage))issues.push(`Job ${j.id}: invalid workflow stage`);if(j.type==="DETAILING"&&!conditions.includes(j.condition))issues.push(`Detail job ${j.id}: invalid condition classification`)});
 db.quotes.forEach(q=>{if(q.jobId&&!J(q.jobId))issues.push(`Quote ${q.id}: missing job link`);if(Number(q.total)<0)issues.push(`Quote ${q.id}: negative total`)});
 db.payments.forEach(p=>{if(p.jobId&&!J(p.jobId))issues.push(`Payment ${p.id}: missing job link`);if(Number(p.amount)<=0)issues.push(`Payment ${p.id}: non-positive amount`)});
 form("SYSTEM AUDIT",`<div class="card"><div class="total">${issues.length?"ISSUES FOUND":"SYSTEM CLEAN"}</div><div class="muted">${issues.length?issues.length+" integrity issue(s) detected. Review before relying on affected records.":"No structural integrity issues detected in the local data."}</div></div><div class="list">${issues.map(x=>`<div class="item">${esc(x)}</div>`).join("")||'<div class="item success">✓ Customer → vehicle → job → quote → payment links are structurally intact.</div>'}</div>`);
 }
 function settings(){form("SETTINGS",`<input id="b" value="${esc(db.settings.business)}" placeholder="Business name"><button onclick="db.settings.business=$('b').value;save();alert('Saved.')">SAVE SETTINGS</button><div class="card" style="margin-top:12px"><b>DATA ARCHITECTURE</b><div class="muted">Local-first • customer → vehicle → job → quote → payment → service history</div><div class="muted" style="margin-top:7px">Storage: ${KEY}</div><div class="muted">The app automatically imports the previous TAUR V5/V4 local dataset when present.</div></div>`)}
 function backup(){let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="TAUR_M3CHANICS_FULL_BACKUP.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function restore(inp){let f=inp.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);db=Object.assign(defaults,x);save();render();alert("Backup restored.")}catch(e){alert("Invalid backup.")}};r.readAsText(f)}
-
+function restore(inp){let f=inp.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);db=Object.assign(defaults,x);db.jobs.forEach(j=>{j.type=j.type||"MECHANICS";j.addOns=j.addOns||[]});save();render();alert("Backup restored.")}catch(e){alert("Invalid backup.")}};r.readAsText(f)}
 
 render();
 </script></body></html>
