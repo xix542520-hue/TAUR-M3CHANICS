@@ -1,0 +1,1 @@
+Job File v2 integration notes: persistent timer, manual labor hours preserved, existing jobFile entry points redirected, existing data schema preserved.
