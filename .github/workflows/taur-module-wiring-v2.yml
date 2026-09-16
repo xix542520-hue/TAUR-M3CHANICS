@@ -1,0 +1,51 @@
+name: TAUR MODULE WIRING V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'taur-*.js'
+      - '.github/workflows/taur-module-wiring-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure shared TAUR modules are wired
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          tags=[
+            '<script src="taur-data-controls-v1.js"></script>',
+            '<script src="taur-pricebook-v1.js"></script>',
+            '<script src="taur-jobfile-xip-v2.js"></script>',
+            '<script src="taur-cloud-sync-v1.js"></script>',
+            '<script src="taur-reinvestment-log-v1.js"></script>',
+          ]
+          if '</body>' not in s:
+              raise SystemExit('index.html missing </body>')
+          changed=False
+          for tag in tags:
+              if tag not in s:
+                  s=s.replace('</body>',tag+'</body>',1)
+                  changed=True
+          if changed:
+              p.write_text(s,encoding='utf-8')
+          else:
+              print('All shared TAUR modules already wired')
+          PY
+      - name: Commit wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Wire TAUR modules through central integration"
+          git push
