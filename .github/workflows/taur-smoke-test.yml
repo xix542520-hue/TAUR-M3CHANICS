@@ -56,3 +56,25 @@ jobs:
               raise SystemExit('Missing module wiring: '+', '.join(missing))
           print(f'All {len(required)} shared TAUR modules are wired')
           PY
+      - name: Validate critical TAUR invariants
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          ledger=Path('taur-payment-ledger-v1.js').read_text(encoding='utf-8')
+          dc=Path('taur-data-controls-v1.js').read_text(encoding='utf-8')
+          jf=Path('taur-jobfile-xip-v2.js').read_text(encoding='utf-8')
+          checks={
+            'payment ledger exposes base payment calculation': 'window.taurPaymentBase=base' in ledger,
+            'payment ledger preserves tip separately': 'p?.tip!=null' in ledger,
+            'payment modal records baseAmount': 'baseAmount:base' in dc,
+            'payment modal records tip': 'tip:t' in dc,
+            'payment modal blocks base overpayment': 'if(base>balance)' in dc,
+            'job file uses exact job context': 'w.dataset.jobId=id' in jf,
+            'job file close clears context': "window.taurCurrentJobId=''" in jf,
+          }
+          failed=[name for name,ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('Invariant failures: '+', '.join(failed))
+          for name in checks: print('PASS:',name)
+          PY
