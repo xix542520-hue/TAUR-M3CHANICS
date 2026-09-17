@@ -42,7 +42,7 @@ jobs:
             '<script src="taur-operational-ux-v1.js"></script>',
             '<script src="taur-field-ux-v1.js"></script>',
             '<script src="taur-payment-ledger-v1.js"></script>',
-            '<script src="taur-visual-system-v1.js"></script>',
+            '<script src="taur-visual-system-v2.js"></script>',
           ]
           if '</body>' not in s:
               raise SystemExit('index.html missing </body>')
@@ -56,28 +56,11 @@ jobs:
           else:
               print('All shared TAUR modules already wired')
           PY
-      - name: Ensure growth collections are synced
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          p=Path('taur-cloud-sync-v1.js')
-          s=p.read_text(encoding='utf-8')
-          old="const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings'];"
-          new="const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','growth_leads','growth_estimates'];"
-          if old in s:
-              s=s.replace(old,new,1)
-              p.write_text(s,encoding='utf-8')
-              print('Added shared growth collections')
-          elif new in s:
-              print('Growth collections already present')
-          else:
-              raise SystemExit('Could not locate TAUR cloud collection registry')
-          PY
       - name: Commit wiring
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html taur-cloud-sync-v1.js
+          git add index.html
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Wire TAUR visual system"
+          git commit -m "Wire TAUR visual system v2"
           git push
