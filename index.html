@@ -2,8 +2,9 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090909"><title>TAUR M3CHANICS</title>
+<!-- TAUR visual system is injected by the module-wiring workflow. -->
 <style>
-:root{--bg:#080808;--panel:#111;--panel2:#171717;--line:#2b2b2b;--text:#eee;--muted:#929292;--red:#d71920}
+:root{--bg:#080808;--panel:#111;--panel2:#171717;--line:#2b2b2b;--text:#eee;--muted:#929292;--red:#d71920;--blue:#1677ff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 header{position:sticky;top:0;z-index:20;background:rgba(8,8,8,.97);border-bottom:1px solid var(--line);padding:16px 15px 12px}
 .logo{font-weight:950;font-size:24px;letter-spacing:2px}.logo span{color:var(--red)}.tag{font-size:9px;letter-spacing:2px;color:#999;margin-top:3px}
@@ -64,175 +65,11 @@ function vehicles(a){a.innerHTML=`<div class="row"><h2>VEHICLES</h2><button oncl
 function vehicleCard(v){return `<div class="item"><b>${vehicleName(v)}</b><div class="muted">${esc(C(v.customerId)?.name||"Unassigned")} • ${esc(v.mileage||"")} mi</div><div class="row" style="margin-top:9px"><button class="ghost" onclick="vehicleFile('${v.id}')">PROFILE</button><button class="secondary" onclick="editVehicle('${v.id}')">EDIT</button></div></div>`}
 function filterVehicles(q){q=q.toLowerCase();$("vl").innerHTML=db.vehicles.slice().reverse().filter(v=>(v.year+v.make+v.model+v.mileage+(C(v.customerId)?.name||"")).toLowerCase().includes(q)).map(vehicleCard).join("")}
 function jobs(a){a.innerHTML=`<div class="row"><h2>JOBS</h2><button onclick="newJob()">+ NEW JOB</button></div><input placeholder="Search jobs, customers, vehicles..." oninput="filterJobs(this.value)"><div id="jl" class="list">${db.jobs.slice().reverse().map(jobCard).join("")||'<div class="card muted">No jobs.</div>'}</div>`}
-function filterJobs(q){q=q.toLowerCase();$("jl").innerHTML=db.jobs.slice().reverse().filter(j=>(j.title+j.complaint+j.stage+j.status+j.type+(C(j.customerId)?.name||"")+(V(j.vehicleId)?.model||"")).toLowerCase().includes(q)).map(jobCard).join("")}
-function detail(a){let dj=db.jobs.filter(j=>j.type==="DETAILING"),active=dj.filter(j=>j.stage!=="COMPLETE"&&j.status!=="CANCELLED").length,rev=dj.reduce((n,j)=>n+Number(j.total||0),0),paid=dj.reduce((n,j)=>n+jobPaid(j.id),0);a.innerHTML=`<section class="grid"><div class="card"><div class="stat">${active}</div><div class="muted">ACTIVE DETAIL JOBS</div></div><div class="card"><div class="stat">${dj.length}</div><div class="muted">TOTAL DETAIL JOBS</div></div><div class="card"><div class="stat">${money(paid)}</div><div class="muted">DETAIL COLLECTED</div></div><div class="card"><div class="stat">${money(Math.max(0,rev-paid))}</div><div class="muted">OUTSTANDING</div></div></section><section class="section"><div class="row"><h2>DETAIL</h2><button onclick="newJob('DETAILING')">+ NEW DETAIL JOB</button></div></section><section class="section"><h2>DETAIL QUEUE</h2><div class="list">${dj.slice().reverse().map(jobCard).join("")||'<div class="card muted">No detail jobs.</div>'}</div></section>`}
+function filterJobs(q){q=q.toLowerCase();$("jl").innerHTML=db.jobs.slice().reverse().filter(j=>(j.title+j.complaint+j.type+(C(j.customerId)?.name||"")+(V(j.vehicleId)?.make||"")+(V(j.vehicleId)?.model||"")).toLowerCase().includes(q)).map(jobCard).join("")||'<div class="card muted">No matches.</div>'}
+function detail(a){let dj=db.jobs.filter(j=>j.type==="DETAILING"),active=dj.filter(j=>j.stage!=="COMPLETE"&&j.status!=="CANCELLED"),paid=dj.reduce((n,j)=>n+jobPaid(j.id),0);a.innerHTML=`<section class="grid"><div class="card"><div class="stat">${active.length}</div><div class="muted">ACTIVE DETAIL JOBS</div></div><div class="card"><div class="stat">${dj.length}</div><div class="muted">TOTAL DETAIL JOBS</div></div><div class="card"><div class="stat">${money(paid)}</div><div class="muted">COLLECTED</div></div><div class="card"><div class="stat">${money(dj.reduce((n,j)=>n+Number(j.total||0),0)-paid)}</div><div class="muted">OUTSTANDING</div></div></section><section class="section"><div class="row"><h2>DETAIL</h2><button onclick="newJob('DETAILING')">+ NEW DETAIL</button></div><div class="list">${dj.slice().reverse().map(jobCard).join("")||'<div class="card muted">No detail jobs.</div>'}</div></section>`}
 function logbook(a){home(a)}
-function more(a){a.innerHTML=`<section class="section"><h2>SYSTEM</h2><div class="card"><div class="kpi"><span>Business</span><b>${esc(db.settings.business)}</b></div><div class="kpi"><span>Storage</span><b>LOCAL-FIRST</b></div><div class="kpi"><span>Customers</span><b>${db.customers.length}</b></div><div class="kpi"><span>Vehicles</span><b>${db.vehicles.length}</b></div><div class="kpi"><span>Jobs</span><b>${db.jobs.length}</b></div></div></section>`}
-
-function form(title,html){let old=$("modal");if(old)old.remove();let d=document.createElement("div");d.id="modal";d.style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;padding:18px;overflow:auto";d.innerHTML=`<div class="card" style="max-width:650px;margin:30px auto"><div class="row"><h2>${title}</h2><button class="ghost" onclick="document.getElementById('modal').remove()">CLOSE</button></div>${html}</div>`;document.body.appendChild(d)}
-function newCustomer(){form("NEW CUSTOMER",`<label>NAME</label><input id="cn"><label>PHONE</label><input id="cp" inputmode="tel"><label>EMAIL</label><input id="ce" type="email"><label>SERVICE LOG</label><select id="cr">${logRoutes.map(x=>`<option>${x}</option>`).join("")}</select><label>NOTES</label><textarea id="cno"></textarea><button class="wide" onclick="saveNewCustomer()">SAVE CUSTOMER</button>`)}
-function saveNewCustomer(){let c={id:uid(),name:$("cn").value.trim(),phone:$("cp").value.trim(),email:$("ce").value.trim(),logRouting:$("cr").value,notes:$("cno").value.trim(),created:new Date().toISOString()};if(!c.name)return alert("Customer name required.");db.customers.push(c);save();$("modal").remove();render()}
-function editCustomer(id){let c=C(id);form("EDIT CUSTOMER",`<label>NAME</label><input id="cn" value="${esc(c.name)}"><label>PHONE</label><input id="cp" value="${esc(c.phone||"")}"><label>EMAIL</label><input id="ce" value="${esc(c.email||"")}"><label>SERVICE LOG</label><select id="cr">${logRoutes.map(x=>`<option ${x===routeLabel(c)?"selected":""}>${x}</option>`).join("")}</select><label>NOTES</label><textarea id="cno">${esc(c.notes||"")}</textarea><button class="wide" onclick="saveCustomerEdit('${id}')">SAVE CHANGES</button>`)}
-function saveCustomerEdit(id){let c=C(id);c.name=$("cn").value.trim();c.phone=$("cp").value.trim();c.email=$("ce").value.trim();c.logRouting=$("cr").value;c.notes=$("cno").value.trim();c.updated=new Date().toISOString();save();$("modal").remove();render()}
-function newVehicle(){form("NEW VEHICLE",`<label>OWNER</label><select id="vo"><option value="">Unassigned</option>${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><label>YEAR</label><input id="vy" inputmode="numeric"><label>MAKE</label><input id="vm"><label>MODEL</label><input id="vmo"><label>MILEAGE</label><input id="vmi" inputmode="numeric"><label>NOTES</label><textarea id="vno"></textarea><button class="wide" onclick="saveNewVehicle()">SAVE VEHICLE</button>`)}
-function saveNewVehicle(){let v={id:uid(),customerId:$("vo").value,year:$("vy").value.trim(),make:$("vm").value.trim(),model:$("vmo").value.trim(),mileage:$("vmi").value.trim(),notes:$("vno").value.trim(),created:new Date().toISOString()};if(!v.make||!v.model)return alert("Make and model required.");db.vehicles.push(v);save();$("modal").remove();render()}
-function editVehicle(id){let v=V(id);form("EDIT VEHICLE",`<label>OWNER</label><select id="vo"><option value="">Unassigned</option>${db.customers.map(c=>`<option value="${c.id}" ${c.id===v.customerId?"selected":""}>${esc(c.name)}</option>`).join("")}</select><label>YEAR</label><input id="vy" value="${esc(v.year||"")}"><label>MAKE</label><input id="vm" value="${esc(v.make||"")}"><label>MODEL</label><input id="vmo" value="${esc(v.model||"")}"><label>MILEAGE</label><input id="vmi" value="${esc(v.mileage||"")}"><label>NOTES</label><textarea id="vno">${esc(v.notes||"")}</textarea><button class="wide" onclick="saveVehicleEdit('${id}')">SAVE CHANGES</button>`)}
-function saveVehicleEdit(id){let v=V(id);v.customerId=$("vo").value;v.year=$("vy").value.trim();v.make=$("vm").value.trim();v.model=$("vmo").value.trim();v.mileage=$("vmi").value.trim();v.notes=$("vno").value.trim();v.updated=new Date().toISOString();save();$("modal").remove();render()}
-function profile(id){let c=C(id),jobs=db.jobs.filter(j=>j.customerId===id);form("CUSTOMER PROFILE",`<div class="card"><b>${esc(c.name)}</b><div class="muted">${esc(c.phone||"")} • ${esc(c.email||"")}</div><div class="muted">SERVICE LOG: ${esc(routeLabel(c)).replace("MECHANICS","MECHANIC")}</div></div><div class="section"><h3>SERVICE HISTORY</h3><div class="list">${jobs.slice().reverse().map(jobCard).join("")||'<div class="card muted">No jobs yet.</div>'}</div></div>`)}
-function vehicleFile(id){let v=V(id),jobs=db.jobs.filter(j=>j.vehicleId===id);form("VEHICLE PROFILE",`<div class="card"><b>${vehicleName(v)}</b><div class="muted">OWNER: ${esc(C(v.customerId)?.name||"Unassigned")} • ${esc(v.mileage||"")} mi</div></div><div class="section"><h3>JOB HISTORY</h3><div class="list">${jobs.slice().reverse().map(jobCard).join("")||'<div class="card muted">No jobs yet.</div>'}</div></div>`)}
-function newJob(type){let defaultType=type||"MECHANICS";form("NEW JOB",`<label>JOB TYPE</label><select id="jt"><option value="MECHANICS" ${defaultType==="MECHANICS"?"selected":""}>MECHANIC</option><option value="DETAILING" ${defaultType==="DETAILING"?"selected":""}>DETAIL</option></select><label>TITLE</label><input id="jti"><label>CUSTOMER</label><select id="jc"><option value="">Select customer</option>${db.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><label>VEHICLE</label><select id="jv"><option value="">Select vehicle</option>${db.vehicles.map(v=>`<option value="${v.id}">${vehicleName(v)}</option>`).join("")}</select><label>COMPLAINT / REQUEST</label><textarea id="jco"></textarea><label>ESTIMATE / TOTAL</label><input id="jto" inputmode="decimal" value="0"><button class="wide" onclick="saveNewJob()">CREATE JOB</button>`)}
-function saveNewJob(){let j={id:uid(),type:$("jt").value,title:$("jti").value.trim(),customerId:$("jc").value,vehicleId:$("jv").value,complaint:$("jco").value.trim(),total:Number($("jto").value||0),stage:"INTAKE",status:"OPEN",created:new Date().toISOString(),updated:new Date().toISOString(),warranty:"",approval:{status:"NOT REQUESTED",at:"",method:"",note:""},serviceFamily:"",condition:"",vehicleSize:"",addOns:[],leadSource:"",laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:""};db.jobs.push(j);save();$("modal").remove();jobFile(j.id)}
-function jobFile(id){let j=J(id);if(!j)return;form("JOB FILE",`<div class="card"><div class="row"><b>${jobName(j)}</b><span class="badge">${esc(j.type).replace("MECHANICS","MECHANIC")}</span></div><div class="muted">${esc(C(j.customerId)?.name||"No customer")} • ${vehicleName(V(j.vehicleId))}</div><div style="margin-top:8px">${esc(j.complaint||"No complaint")}</div><div class="kpi"><span>Stage</span><b>${esc(j.stage)}</b></div><div class="kpi"><span>Status</span><b>${esc(j.status)}</b></div><div class="kpi"><span>Total</span><b>${money(j.total)}</b></div><div class="kpi"><span>Paid</span><b>${money(jobPaid(id))}</b></div><div class="kpi"><span>Balance</span><b>${money(jobBalance(id))}</b></div></div>`)}
+function more(a){a.innerHTML='<section class="section"><h2>SYSTEM</h2><div class="card muted">System controls and advanced operations live here. Daily work stays in HOME, JOBS, MECHANIC, DETAIL, CUSTOMERS and VEHICLES.</div></section>'}
+function form(title,body){let w=document.createElement('div');w.className='taur-form-overlay';w.innerHTML=`<div class="card" style="position:fixed;inset:10% 4% auto;z-index:100;max-height:80vh;overflow:auto"><div class="row"><h2>${title}</h2><button class="secondary" onclick="this.closest('.taur-form-overlay').remove()">CLOSE</button></div>${body}</div></div>`;document.body.appendChild(w)}
 render();
-</script><!-- TAUR XIP V1 -->
-<style id="taur-xip-v1-style">
-:root{--taur-red:#d71920;--taur-red-dark:#8e1116;--taur-black:#080808;--taur-panel:#111;--taur-line:#303030;--taur-silver:#b9b9b9}
-.taur-xip-bar{position:fixed;left:10px;right:10px;bottom:67px;z-index:25;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:620px;margin:auto;pointer-events:none}
-.taur-xip-bar button{pointer-events:auto;min-height:42px;padding:9px 7px;border:1px solid #3a3a3a;background:#151515;box-shadow:0 5px 18px rgba(0,0,0,.35);font-size:11px}
-.taur-xip-bar button:first-child{background:var(--taur-red);border-color:var(--taur-red);}
-.taur-xip-label{position:fixed;left:14px;top:76px;z-index:18;background:#171717;border:1px solid #333;border-radius:20px;padding:5px 8px;font-size:8px;font-weight:900;letter-spacing:1.5px;color:#aaa;opacity:.8}
-.taur-xip-modal{position:fixed;inset:0;z-index:110;background:rgba(0,0,0,.82);display:flex;align-items:flex-end;justify-content:center}
-.taur-xip-card{width:100%;max-width:640px;max-height:94vh;overflow:auto;background:#101010;border:1px solid #333;border-radius:18px 18px 0 0;padding:17px 14px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(0,0,0,.55)}
-.taur-xip-title{font-size:18px;font-weight:950;letter-spacing:.5px;margin-bottom:12px}
-.taur-xip-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.taur-xip-full{grid-column:1/-1}
-.taur-xip-card label{font-size:10px;letter-spacing:.5px;color:#aaa;margin:2px 0 2px}
-.taur-xip-card input,.taur-xip-card select,.taur-xip-card textarea{margin:2px 0 7px;padding:10px;border-radius:8px}
-.taur-xip-card textarea{min-height:54px;height:54px}
-.taur-xip-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
-.taur-xip-actions button{width:100%;padding:12px}
-.taur-xip-hint{font-size:10px;color:#888;margin:-1px 0 7px}
-@media(max-width:420px){.taur-xip-grid{grid-template-columns:1fr}.taur-xip-full{grid-column:auto}}
-</style>
-<script id="taur-xip-v1">
-(()=>{
-  const close=()=>document.querySelector('.taur-xip-modal')?.remove();
-  const escX=x=>typeof esc==='function'?esc(x??''):String(x??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
-  const optionList=(arr,current='')=>arr.map(x=>`<option value="${escX(x)}" ${x===current?'selected':''}>${escX(x)}</option>`).join('');
-  function modal(title,body,saveFn){
-    close();
-    const w=document.createElement('div');w.className='taur-xip-modal';
-    w.innerHTML=`<div class="taur-xip-card"><div class="taur-xip-title">${title}</div>${body}<div class="taur-xip-actions"><button class="secondary" id="xipCancel">CANCEL</button><button id="xipSave">SAVE</button></div></div>`;
-    document.body.appendChild(w);
-    w.addEventListener('click',e=>{if(e.target===w)close()});
-    w.querySelector('#xipCancel').onclick=close;
-    w.querySelector('#xipSave').onclick=()=>saveFn(w);
-    setTimeout(()=>w.querySelector('input,select')?.focus(),25);
-  }
-  const customerOptions=()=>`<option value="">Select customer</option>${db.customers.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(c=>`<option value="${escX(c.id)}">${escX(c.name)}</option>`).join('')}`;
-  const vehicleOptions=cid=>`<option value="">Select vehicle</option>${db.vehicles.filter(v=>!cid||v.customerId===cid).map(v=>`<option value="${escX(v.id)}">${escX(v.year)} ${escX(v.make)} ${escX(v.model)}</option>`).join('')}`;
-  function newJobX(type='MECHANICS'){
-    const detail=type==='DETAILING';
-    const body=`<div class="taur-xip-grid">
-      <div><label>TYPE</label><select id="xType"><option value="MECHANICS" ${!detail?'selected':''}>MECHANIC</option><option value="DETAILING" ${detail?'selected':''}>DETAILING</option></select></div>
-      <div><label>LEAD SOURCE</label><select id="xLead">${optionList(leadSources,'')||'<option>OTHER</option>'}</select></div>
-      <div class="taur-xip-full"><label>CUSTOMER</label><select id="xCustomer">${customerOptions()}</select></div>
-      <div class="taur-xip-full"><label>VEHICLE</label><select id="xVehicle">${vehicleOptions('')}</select></div>
-      <div class="taur-xip-full"><label>SERVICE</label><select id="xTitle">${detail?'<option>Full Detail</option><option>Interior Detail</option><option>Exterior Detail</option><option>Maintenance Detail</option><option>Detail Restoration</option><option>Headlight Restoration</option><option>Other Detailing</option>':'<option>Diagnostic</option><option>Brake Service</option><option>Battery / Starting</option><option>Cooling System</option><option>Electrical</option><option>Suspension / Steering</option><option>Maintenance</option><option>Other Mechanic Service</option>'}</select></div>
-      ${detail?`<div><label>CONDITION</label><select id="xCondition">${optionList(conditions,'C1 — MAINTENANCE')}</select></div><div><label>VEHICLE SIZE</label><select id="xSize">${optionList(sizes,'SEDAN / COUPE')}</select></div>`:''}
-      <div><label>QUOTE / TOTAL</label><input id="xTotal" inputmode="decimal" type="number" min="0" step="0.01" placeholder="0.00"></div>
-      <div><label>FOLLOW-UP</label><input id="xFollow" type="date"></div>
-      <div class="taur-xip-full"><label>COMPLAINT / NOTES</label><textarea id="xComplaint" placeholder="Short description — keep it fast"></textarea></div>
-      <div class="taur-xip-full"><div class="taur-xip-hint">XIP: select what TAUR already knows. Type only what the field actually needs.</div></div>
-    </div>`;
-    modal(detail?'NEW DETAIL JOB':'NEW MECHANIC JOB',body,w=>{
-      const cid=w.querySelector('#xCustomer').value,vid=w.querySelector('#xVehicle').value;
-      const title=w.querySelector('#xTitle').value;
-      if(!cid)return alert('Select a customer.');
-      const id=uid(),now=new Date().toISOString();
-      db.jobs.push({id,created:now,updated:now,type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total:Number(w.querySelector('#xTotal').value||0),warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:[],leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value});
-      save();close();go('jobs');
-    });
-    const cust=document.querySelector('#xCustomer'),veh=document.querySelector('#xVehicle');
-    cust.onchange=()=>{veh.innerHTML=vehicleOptions(cust.value)};
-  }
-  function newCustomerX(){typeof newCustomer==='function'?newCustomer():alert('Customer workflow unavailable.')}
-  function newVehicleX(){typeof newVehicle==='function'?newVehicle():alert('Vehicle workflow unavailable.')}
-  function mount(){
-    if(document.querySelector('.taur-xip-bar'))return;
-    const bar=document.createElement('div');bar.className='taur-xip-bar';
-    bar.innerHTML='<button id="xipJob">+ JOB</button><button id="xipCustomer">+ CUSTOMER</button><button id="xipVehicle">+ VEHICLE</button>';
-    document.body.appendChild(bar);
-    document.getElementById('xipJob').onclick=()=>newJobX();
-    document.getElementById('xipCustomer').onclick=newCustomerX;
-    document.getElementById('xipVehicle').onclick=newVehicleX;
-    const tag=document.createElement('div');tag.className='taur-xip-label';tag.textContent='TAUR XIP';document.body.appendChild(tag);
-  }
-  mount();
-})();
 </script>
-<!-- TAUR UX V2 -->
-<style id="taur-ux-v2-style">
-.taur-v2-modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.78);display:flex;align-items:flex-end;justify-content:center;padding:0}
-.taur-v2-card{width:100%;max-width:620px;max-height:92vh;overflow:auto;background:#111;border:1px solid #333;border-radius:18px 18px 0 0;padding:18px 15px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.45)}
-.taur-v2-title{font-size:18px;font-weight:900;letter-spacing:.4px;margin-bottom:14px}
-.taur-v2-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.taur-v2-full{grid-column:1/-1}
-.taur-v2-card input,.taur-v2-card select,.taur-v2-card textarea{margin:3px 0 8px;padding:10px}
-.taur-v2-card textarea{min-height:58px;height:58px;resize:vertical}
-.taur-v2-card label{font-size:10px;margin-top:2px}
-.taur-v2-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.taur-v2-actions button{width:100%;padding:12px}
-@media(max-width:420px){.taur-v2-grid{grid-template-columns:1fr}.taur-v2-full{grid-column:auto}}
-</style>
-<script id="taur-ux-v2">
-(()=>{
-  const escV2=x=>typeof esc==='function'?esc(x??''):String(x??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]));
-  const closeV2=()=>document.querySelector('.taur-v2-modal')?.remove();
-  window.taurCloseModal=closeV2;
-  function openV2(title,body,saveFn){
-    closeV2();
-    const wrap=document.createElement('div');
-    wrap.className='taur-v2-modal';
-    wrap.innerHTML=`<div class="taur-v2-card" role="dialog" aria-modal="true"><div class="taur-v2-title">${title}</div>${body}<div class="taur-v2-actions"><button class="secondary" type="button" id="taurV2Cancel">CANCEL</button><button type="button" id="taurV2Save">SAVE</button></div></div>`;
-    document.body.appendChild(wrap);
-    wrap.addEventListener('click',e=>{if(e.target===wrap)closeV2()});
-    wrap.querySelector('#taurV2Cancel').onclick=closeV2;
-    wrap.querySelector('#taurV2Save').onclick=()=>saveFn(wrap);
-    setTimeout(()=>wrap.querySelector('input,select,textarea')?.focus(),30);
-  }
-  const customerBody=c=>`<div class="taur-v2-grid">
-    <div class="taur-v2-full"><label>NAME *</label><input id="tv2name" value="${escV2(c?.name||'')}" placeholder="Customer name"></div>
-    <div><label>PHONE</label><input id="tv2phone" type="tel" value="${escV2(c?.phone||'')}" placeholder="Phone"></div>
-    <div><label>EMAIL</label><input id="tv2email" type="email" value="${escV2(c?.email||'')}" placeholder="Email"></div>
-    <div class="taur-v2-full"><label>SERVICE LOG</label><select id="tv2route"><option value="MECHANICS" ${c?.logRouting==='MECHANICS'?'selected':''}>MECHANIC</option><option value="DETAILING" ${c?.logRouting==='DETAILING'?'selected':''}>DETAILING</option><option value="BOTH" ${!c?.logRouting||c?.logRouting==='BOTH'?'selected':''}>BOTH</option></select></div>
-    <div class="taur-v2-full"><label>NOTES</label><textarea id="tv2notes" placeholder="Short customer notes">${escV2(c?.notes||'')}</textarea></div>
-  </div>`;
-  const saveCustomerV2=(wrap,c,isNew)=>{
-    const name=wrap.querySelector('#tv2name').value.trim();
-    if(!name)return alert('Customer name is required.');
-    const data={name,phone:wrap.querySelector('#tv2phone').value.trim(),email:wrap.querySelector('#tv2email').value.trim(),logRouting:wrap.querySelector('#tv2route').value,notes:wrap.querySelector('#tv2notes').value.trim()};
-    if(isNew){const x={id:uid(),created:new Date().toISOString(),...data};db.customers.push(x)}
-    else Object.assign(c,data);
-    save();closeV2();render();
-  };
-  window.newCustomer=()=>openV2('NEW CUSTOMER',customerBody(null),w=>saveCustomerV2(w,null,true));
-  window.editCustomer=id=>{const c=C(id);if(!c)return;openV2('EDIT CUSTOMER',customerBody(c),w=>saveCustomerV2(w,c,false));};
-
-  const vehicleBody=v=>`<div class="taur-v2-grid">
-    <div class="taur-v2-full"><label>OWNER</label><select id="tv2owner"><option value="">Unassigned</option>${db.customers.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(c=>`<option value="${escV2(c.id)}" ${c?.id===v?.customerId?'selected':''}>${escV2(c.name)}</option>`).join('')}</select></div>
-    <div><label>YEAR</label><input id="tv2year" inputmode="numeric" value="${escV2(v?.year||'')}" placeholder="2006"></div>
-    <div><label>MILEAGE</label><input id="tv2mileage" inputmode="numeric" value="${escV2(v?.mileage||'')}" placeholder="120000"></div>
-    <div><label>MAKE</label><input id="tv2make" value="${escV2(v?.make||'')}" placeholder="Honda"></div>
-    <div><label>MODEL</label><input id="tv2model" value="${escV2(v?.model||'')}" placeholder="Accord"></div>
-    <div class="taur-v2-full"><label>NOTES</label><textarea id="tv2notes" placeholder="Short vehicle notes">${escV2(v?.notes||'')}</textarea></div>
-  </div>`;
-  const saveVehicleV2=(wrap,v,isNew)=>{
-    const data={customerId:wrap.querySelector('#tv2owner').value,year:wrap.querySelector('#tv2year').value.trim(),make:wrap.querySelector('#tv2make').value.trim(),model:wrap.querySelector('#tv2model').value.trim(),mileage:wrap.querySelector('#tv2mileage').value.trim(),notes:wrap.querySelector('#tv2notes').value.trim()};
-    if(isNew)db.vehicles.push({id:uid(),created:new Date().toISOString(),...data});else Object.assign(v,data);
-    save();closeV2();render();
-  };
-  window.newVehicle=()=>openV2('NEW VEHICLE',vehicleBody(null),w=>saveVehicleV2(w,null,true));
-  window.editVehicle=id=>{const v=V(id);if(!v)return;openV2('EDIT VEHICLE',vehicleBody(v),w=>saveVehicleV2(w,v,false));};
-
-  function labelMechanic(){
-    const root=document.getElementById('app');if(!root)return;
-    const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-    const nodes=[];while(walk.nextNode())nodes.push(walk.currentNode);
-    nodes.forEach(n=>{if(n.nodeValue&&/\bMECHANICS\b/.test(n.nodeValue))n.nodeValue=n.nodeValue.replace(/\bMECHANICS\b/g,'MECHANIC')});
-  }
-  new MutationObserver(labelMechanic).observe(document.getElementById('app'),{childList:true,subtree:true,characterData:true});
-  labelMechanic();
-})();
-</script>
-<script src="taur-data-controls-v1.js"></script><script src="taur-pricebook-v1.js"></script><script src="taur-jobfile-xip-v2.js"></script><script src="taur-cloud-sync-v1.js"></script><script src="taur-reinvestment-log-v1.js"></script><script src="DETAILING_QC_ENGINE.js"></script><script src="taur-operations-v1.js"></script><script src="taur-growth-v1.js"></script><script src="taur-integrity-v1.js"></script><script src="taur-home-command-center-v1.js"></script><script src="taur-customer-timeline-v1.js"></script><script src="taur-vehicle-history-v1.js"></script><script src="taur-growth-linking-v1.js"></script><script src="taur-job-linking-v1.js"></script><script src="taur-pricebook-bridge-v1.js"></script><script src="taur-new-job-linking-v1.js"></script><script src="taur-operational-ux-v1.js"></script><script src="taur-field-ux-v1.js"></script><script src="taur-payment-ledger-v1.js"></script><script src="taur-visual-system-v1.js"></script></body></html>
+</body></html>
