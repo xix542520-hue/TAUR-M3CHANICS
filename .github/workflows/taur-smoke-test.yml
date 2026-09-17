@@ -69,3 +69,5 @@ jobs:
           if failed: raise SystemExit('Invariant failures: '+', '.join(failed))
           for name in checks: print('PASS:',name)
           PY
+
+# Fresh verification trigger: validate current main after the Partner Network changes.
