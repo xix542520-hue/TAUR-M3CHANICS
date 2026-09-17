@@ -52,9 +52,12 @@ jobs:
             'taur-payment-ledger-v1.js',
           ]
           missing=[x for x in required if f'<script src="{x}"></script>' not in s]
+          duplicates=[x for x in required if s.count(f'<script src="{x}"></script>') != 1]
           if missing:
               raise SystemExit('Missing module wiring: '+', '.join(missing))
-          print(f'All {len(required)} shared TAUR modules are wired')
+          if duplicates:
+              raise SystemExit('Duplicate module wiring: '+', '.join(duplicates))
+          print(f'All {len(required)} shared TAUR modules are wired exactly once')
           PY
       - name: Validate critical TAUR invariants
         run: |
