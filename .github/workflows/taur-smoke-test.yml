@@ -50,6 +50,7 @@ jobs:
             'taur-operational-ux-v1.js',
             'taur-field-ux-v1.js',
             'taur-payment-ledger-v1.js',
+            'taur-visual-system-v2.js',
           ]
           missing=[x for x in required if f'<script src="{x}"></script>' not in s]
           duplicates=[x for x in required if s.count(f'<script src="{x}"></script>') != 1]
@@ -58,6 +59,23 @@ jobs:
           if duplicates:
               raise SystemExit('Duplicate module wiring: '+', '.join(duplicates))
           print(f'All {len(required)} shared TAUR modules are wired exactly once')
+          PY
+      - name: Validate TAUR AUTOMOTIVE branding
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          visual=Path('taur-visual-system-v2.js').read_text(encoding='utf-8')
+          index=Path('index.html').read_text(encoding='utf-8')
+          checks={
+            'visual system sets TAUR AUTOMOTIVE title': "document.title='TAUR AUTOMOTIVE'" in visual,
+            'visual system sets TAUR AUTOMOTIVE header': "'TAUR <span>AUTOMOTIVE</span>'" in visual,
+            'index retains full app shell': 'function newCustomer()' in index and 'function newVehicle()' in index and 'function newJob(type)' in index,
+          }
+          failed=[name for name,ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('Branding/shell failures: '+', '.join(failed))
+          for name in checks: print('PASS:',name)
           PY
       - name: Validate critical TAUR invariants
         run: |
