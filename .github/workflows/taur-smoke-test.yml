@@ -10,38 +10,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Harden TAUR boot parsing
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          old='let db=JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(localStorage.getItem("TAUR_M3CHANICS_v5")||localStorage.getItem("TAUR_M3CHANICS_v4")||JSON.stringify(defaults));'
-          new='const parseLocal=(k,fallback=null)=>{try{const raw=localStorage.getItem(k);return raw?JSON.parse(raw):fallback}catch{return fallback}};\nlet db=parseLocal(KEY)||parseLocal("TAUR_M3CHANICS_v5")||parseLocal("TAUR_M3CHANICS_v4")||JSON.parse(JSON.stringify(defaults));'
-          if old in s:
-              p.write_text(s.replace(old,new,1),encoding='utf-8')
-              print('Applied safe localStorage boot parser')
-          else:
-              print('Safe boot parser already present')
-          PY
-      - name: Commit boot hardening
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then
-            echo "No boot hardening change needed"
-          else
-            git commit -m "Harden TAUR boot against corrupt local storage"
-            git push
-          fi
       - name: Validate JavaScript syntax
         run: |
           set -e
@@ -85,9 +60,9 @@ jobs:
             'home HQ opens exact job context':'data-job="${esc(j.id)}"' in hq,
             'home HQ has direct navigation fallback':"window.go==='function'" in hq,
             'partner referrals store customer IDs':'customerId:cs.value' in pn,
-            'partner referrals store vehicle IDs':'vehicleId:vs.value||\'\'' in pn,
-            'partner referrals store partner IDs':'partnerId:w.querySelector(\'#rfPartner\').value' in pn,
-            'partner referrals can link a job':'jobId:js.value||\'\'' in pn,
+            'partner referrals store vehicle IDs':'vehicleId:vid' in pn,
+            'partner referrals store partner IDs':'partnerId:pid' in pn,
+            'partner referrals can link a job':'jobId:jid' in pn,
             'partner referrals can open linked Job Files':'data-ref-job' in pn,
           }
           failed=[name for name,ok in checks.items() if not ok]
