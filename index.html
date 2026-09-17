@@ -24,7 +24,8 @@ nav button{background:#0d0d0d;color:#999;border-radius:0;padding:11px 2px;font-s
 <script>
 const KEY="TAUR_M3CHANICS_FINAL_V1";
 const defaults={customers:[],vehicles:[],jobs:[],quotes:[],payments:[],parts:[],pricing:[],tools:[],research:[],settings:{business:"TAUR M3CHANICS"}};
-let db=JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(localStorage.getItem("TAUR_M3CHANICS_v5")||localStorage.getItem("TAUR_M3CHANICS_v4")||JSON.stringify(defaults));
+const parseLocal=(k,fallback=null)=>{try{const raw=localStorage.getItem(k);return raw?JSON.parse(raw):fallback}catch{return fallback}};
+let db=parseLocal(KEY)||parseLocal("TAUR_M3CHANICS_v5")||parseLocal("TAUR_M3CHANICS_v4")||JSON.parse(JSON.stringify(defaults));
 Object.keys(defaults).forEach(k=>{if(db[k]===undefined)db[k]=Array.isArray(defaults[k])?[]:defaults[k]});
 db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=j.status||"OPEN";j.total=Number(j.total||0);j.warranty=j.warranty||"";j.approval=j.approval||{status:"NOT REQUESTED",at:"",method:"",note:""};j.updated=j.updated||j.created||new Date().toISOString();j.type=j.type||"MECHANICS";j.serviceFamily=j.serviceFamily||"";j.condition=j.condition||"";j.vehicleSize=j.vehicleSize||"";j.addOns=j.addOns||[];j.leadSource=j.leadSource||"";j.laborHours=Number(j.laborHours||0);j.travelMinutes=Number(j.travelMinutes||0);j.materialsCost=Number(j.materialsCost||0);j.followUpDate=j.followUpDate||""});
 db.customers.forEach(c=>{c.logRouting=c.logRouting||"BOTH"});
