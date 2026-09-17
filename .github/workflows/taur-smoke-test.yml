@@ -1,0 +1,57 @@
+name: TAUR SMOKE TEST
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.js'
+      - 'index.html'
+      - '.github/workflows/taur-smoke-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: |
+          set -e
+          for f in *.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+      - name: Validate required TAUR module wiring
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          required=[
+            'taur-data-controls-v1.js',
+            'taur-pricebook-v1.js',
+            'taur-jobfile-xip-v2.js',
+            'taur-cloud-sync-v1.js',
+            'taur-reinvestment-log-v1.js',
+            'DETAILING_QC_ENGINE.js',
+            'taur-operations-v1.js',
+            'taur-growth-v1.js',
+            'taur-integrity-v1.js',
+            'taur-home-command-center-v1.js',
+            'taur-customer-timeline-v1.js',
+            'taur-vehicle-history-v1.js',
+            'taur-growth-linking-v1.js',
+            'taur-job-linking-v1.js',
+            'taur-pricebook-bridge-v1.js',
+            'taur-new-job-linking-v1.js',
+            'taur-operational-ux-v1.js',
+            'taur-field-ux-v1.js',
+          ]
+          missing=[x for x in required if f'<script src="{x}"></script>' not in s]
+          if missing:
+              raise SystemExit('Missing module wiring: '+', '.join(missing))
+          print(f'All {len(required)} shared TAUR modules are wired')
+          PY
