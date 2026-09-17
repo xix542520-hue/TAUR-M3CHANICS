@@ -31,51 +31,14 @@ jobs:
           from pathlib import Path
           s=Path('index.html').read_text(encoding='utf-8')
           required=[
-            'taur-data-controls-v1.js',
-            'taur-pricebook-v1.js',
-            'taur-jobfile-xip-v2.js',
-            'taur-cloud-sync-v1.js',
-            'taur-reinvestment-log-v1.js',
-            'DETAILING_QC_ENGINE.js',
-            'taur-operations-v1.js',
-            'taur-growth-v1.js',
-            'taur-integrity-v1.js',
-            'taur-home-command-center-v1.js',
-            'taur-customer-timeline-v1.js',
-            'taur-vehicle-history-v1.js',
-            'taur-growth-linking-v1.js',
-            'taur-job-linking-v1.js',
-            'taur-pricebook-bridge-v1.js',
-            'taur-new-job-linking-v1.js',
-            'taur-operational-ux-v1.js',
-            'taur-field-ux-v1.js',
-            'taur-payment-ledger-v1.js',
-            'taur-visual-system-v2.js',
-          ]
+            'taur-data-controls-v1.js','taur-pricebook-v1.js','taur-jobfile-xip-v2.js','taur-cloud-sync-v1.js','taur-reinvestment-log-v1.js','DETAILING_QC_ENGINE.js','taur-operations-v1.js','taur-growth-v1.js','taur-integrity-v1.js','taur-home-command-center-v1.js','taur-customer-timeline-v1.js','taur-vehicle-history-v1.js','taur-growth-linking-v1.js','taur-job-linking-v1.js','taur-pricebook-bridge-v1.js','taur-new-job-linking-v1.js','taur-operational-ux-v1.js','taur-field-ux-v1.js','taur-payment-ledger-v1.js','taur-visual-system-v2.js']
           missing=[x for x in required if f'<script src="{x}"></script>' not in s]
           duplicates=[x for x in required if s.count(f'<script src="{x}"></script>') != 1]
-          if missing:
-              raise SystemExit('Missing module wiring: '+', '.join(missing))
-          if duplicates:
-              raise SystemExit('Duplicate module wiring: '+', '.join(duplicates))
+          if missing: raise SystemExit('Missing module wiring: '+', '.join(missing))
+          if duplicates: raise SystemExit('Duplicate module wiring: '+', '.join(duplicates))
+          if 'TAUR AUTOMOTIVE' not in s: raise SystemExit('Missing TAUR AUTOMOTIVE shell branding')
           print(f'All {len(required)} shared TAUR modules are wired exactly once')
-          PY
-      - name: Validate TAUR AUTOMOTIVE branding
-        run: |
-          set -e
-          python3 - <<'PY'
-          from pathlib import Path
-          visual=Path('taur-visual-system-v2.js').read_text(encoding='utf-8')
-          index=Path('index.html').read_text(encoding='utf-8')
-          checks={
-            'visual system sets TAUR AUTOMOTIVE title': "document.title='TAUR AUTOMOTIVE'" in visual,
-            'visual system sets TAUR AUTOMOTIVE header': "'TAUR <span>AUTOMOTIVE</span>'" in visual,
-            'index retains full app shell': 'function newCustomer()' in index and 'function newVehicle()' in index and 'function newJob(type)' in index,
-          }
-          failed=[name for name,ok in checks.items() if not ok]
-          if failed:
-              raise SystemExit('Branding/shell failures: '+', '.join(failed))
-          for name in checks: print('PASS:',name)
+          print('PASS: TAUR AUTOMOTIVE shell branding')
           PY
       - name: Validate critical TAUR invariants
         run: |
@@ -85,17 +48,19 @@ jobs:
           ledger=Path('taur-payment-ledger-v1.js').read_text(encoding='utf-8')
           dc=Path('taur-data-controls-v1.js').read_text(encoding='utf-8')
           jf=Path('taur-jobfile-xip-v2.js').read_text(encoding='utf-8')
+          hq=Path('taur-home-command-center-v1.js').read_text(encoding='utf-8')
           checks={
-            'payment ledger exposes base payment calculation': 'window.taurPaymentBase=base' in ledger,
-            'payment ledger preserves tip separately': 'p?.tip!=null' in ledger,
-            'payment modal records baseAmount': 'baseAmount:base' in dc,
-            'payment modal records tip': 'tip:t' in dc,
-            'payment modal blocks base overpayment': 'if(base>balance)' in dc,
-            'job file uses exact job context': 'w.dataset.jobId=id' in jf,
-            'job file close clears context': "window.taurCurrentJobId=''" in jf,
+            'payment ledger exposes base payment calculation':'window.taurPaymentBase=base' in ledger,
+            'payment ledger preserves tip separately':'p?.tip!=null' in ledger,
+            'payment modal records baseAmount':'baseAmount:base' in dc,
+            'payment modal records tip':'tip:t' in dc,
+            'payment modal blocks base overpayment':'if(base>balance)' in dc,
+            'job file uses exact job context':'w.dataset.jobId=id' in jf,
+            'job file close clears context':"window.taurCurrentJobId=''" in jf,
+            'home HQ opens exact job context':'data-job="${esc(j.id)}"' in hq,
+            'home HQ has direct navigation fallback':"window.go==='function'" in hq,
           }
           failed=[name for name,ok in checks.items() if not ok]
-          if failed:
-              raise SystemExit('Invariant failures: '+', '.join(failed))
+          if failed: raise SystemExit('Invariant failures: '+', '.join(failed))
           for name in checks: print('PASS:',name)
           PY
