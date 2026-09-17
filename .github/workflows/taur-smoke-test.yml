@@ -30,8 +30,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text(encoding='utf-8')
-          required=[
-            'taur-data-controls-v1.js','taur-pricebook-v1.js','taur-jobfile-xip-v2.js','taur-cloud-sync-v1.js','taur-reinvestment-log-v1.js','DETAILING_QC_ENGINE.js','taur-operations-v1.js','taur-growth-v1.js','taur-integrity-v1.js','taur-home-command-center-v1.js','taur-customer-timeline-v1.js','taur-vehicle-history-v1.js','taur-growth-linking-v1.js','taur-job-linking-v1.js','taur-pricebook-bridge-v1.js','taur-new-job-linking-v1.js','taur-operational-ux-v1.js','taur-field-ux-v1.js','taur-payment-ledger-v1.js','taur-visual-system-v2.js']
+          required=['taur-data-controls-v1.js','taur-pricebook-v1.js','taur-jobfile-xip-v2.js','taur-cloud-sync-v1.js','taur-reinvestment-log-v1.js','DETAILING_QC_ENGINE.js','taur-operations-v1.js','taur-growth-v1.js','taur-integrity-v1.js','taur-home-command-center-v1.js','taur-customer-timeline-v1.js','taur-vehicle-history-v1.js','taur-growth-linking-v1.js','taur-job-linking-v1.js','taur-pricebook-bridge-v1.js','taur-new-job-linking-v1.js','taur-operational-ux-v1.js','taur-field-ux-v1.js','taur-payment-ledger-v1.js','taur-visual-system-v2.js']
           missing=[x for x in required if f'<script src="{x}"></script>' not in s]
           duplicates=[x for x in required if s.count(f'<script src="{x}"></script>') != 1]
           if missing: raise SystemExit('Missing module wiring: '+', '.join(missing))
@@ -56,6 +55,8 @@ jobs:
             'payment modal records tip':'tip:t' in dc,
             'payment modal blocks base overpayment':'if(base>balance)' in dc,
             'job file uses exact job context':'w.dataset.jobId=id' in jf,
+            'job file stores division type':"w.dataset.jobType=j.type||'MECHANICS'" in jf,
+            'job file prefers shared payment flow':'window.taurRecordPayment===' in jf,
             'job file close clears context':"window.taurCurrentJobId=''" in jf,
             'home HQ opens exact job context':'data-job="${esc(j.id)}"' in hq,
             'home HQ has direct navigation fallback':"window.go==='function'" in hq,
