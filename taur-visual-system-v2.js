@@ -1,5 +1,7 @@
 /* TAUR VISUAL SYSTEM V3 — efficiency UI / red mechanic / blue detailing */
 (()=>{
+ document.title='TAUR AUTOMOTIVE';
+ const brand=document.querySelector('.logo');if(brand)brand.innerHTML='TAUR <span>AUTOMOTIVE</span>';
  const style=document.createElement('style');style.id='taur-visual-system-v3';style.textContent=`
  :root{--taur-red:#d71920;--taur-blue:#1677ff;--taur-blue-soft:rgba(22,119,255,.14);--taur-red-soft:rgba(215,25,32,.14);--taur-black:#080808;--taur-panel:#111;--taur-panel2:#171717;--taur-line:#292929}
  body{background:var(--taur-black);letter-spacing:.01em}
