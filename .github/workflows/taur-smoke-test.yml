@@ -49,6 +49,7 @@ jobs:
             'taur-new-job-linking-v1.js',
             'taur-operational-ux-v1.js',
             'taur-field-ux-v1.js',
+            'taur-payment-ledger-v1.js',
           ]
           missing=[x for x in required if f'<script src="{x}"></script>' not in s]
           if missing:
