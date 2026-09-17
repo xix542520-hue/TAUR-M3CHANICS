@@ -69,3 +69,4 @@ jobs:
           if failed: raise SystemExit('Invariant failures: '+', '.join(failed))
           for name in checks: print('PASS:',name)
           PY
+# Verification trigger: rerun the smoke suite against the current main tree.
