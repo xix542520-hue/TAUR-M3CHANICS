@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#090909"><title>TAUR M3CHANICS</title>
-<!-- TAUR visual system is injected by the module-wiring workflow. -->
+<meta name="theme-color" content="#090909"><title>TAUR AUTOMOTIVE</title>
+<!-- TAUR AUTOMOTIVE shared shell. Functional modules remain wired by the repository workflow. -->
 <style>
 :root{--bg:#080808;--panel:#111;--panel2:#171717;--line:#2b2b2b;--text:#eee;--muted:#929292;--red:#d71920;--blue:#1677ff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -20,11 +20,11 @@ nav button{background:#0d0d0d;color:#999;border-radius:0;padding:11px 2px;font-s
 .progress{height:8px;background:#252525;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--red)}
 .kpi{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #242424}.hide{display:none}.wide{width:100%}
 </style></head><body>
-<header><div class="logo">TAUR <span>M3CHANICS</span></div><div class="tag">DIAGNOSE. DON'T GUESS.</div></header>
+<header><div class="logo">TAUR <span>AUTOMOTIVE</span></div><div class="tag">DIAGNOSE. DON'T GUESS.</div></header>
 <main id="app"></main><nav id="nav"></nav>
 <script>
 const KEY="TAUR_M3CHANICS_FINAL_V1";
-const defaults={customers:[],vehicles:[],jobs:[],quotes:[],payments:[],parts:[],pricing:[],tools:[],research:[],settings:{business:"TAUR M3CHANICS"}};
+const defaults={customers:[],vehicles:[],jobs:[],quotes:[],payments:[],parts:[],pricing:[],tools:[],research:[],settings:{business:"TAUR AUTOMOTIVE"}};
 let db=JSON.parse(localStorage.getItem(KEY)||"null")||JSON.parse(localStorage.getItem("TAUR_M3CHANICS_v5")||localStorage.getItem("TAUR_M3CHANICS_v4")||JSON.stringify(defaults));
 Object.keys(defaults).forEach(k=>{if(db[k]===undefined)db[k]=Array.isArray(defaults[k])?[]:defaults[k]});
 db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=j.status||"OPEN";j.total=Number(j.total||0);j.warranty=j.warranty||"";j.approval=j.approval||{status:"NOT REQUESTED",at:"",method:"",note:""};j.updated=j.updated||j.created||new Date().toISOString();j.type=j.type||"MECHANICS";j.serviceFamily=j.serviceFamily||"";j.condition=j.condition||"";j.vehicleSize=j.vehicleSize||"";j.addOns=j.addOns||[];j.leadSource=j.leadSource||"";j.laborHours=Number(j.laborHours||0);j.travelMinutes=Number(j.travelMinutes||0);j.materialsCost=Number(j.materialsCost||0);j.followUpDate=j.followUpDate||""});
@@ -72,4 +72,4 @@ function more(a){a.innerHTML='<section class="section"><h2>SYSTEM</h2><div class
 function form(title,body){let w=document.createElement('div');w.className='taur-form-overlay';w.innerHTML=`<div class="card" style="position:fixed;inset:10% 4% auto;z-index:100;max-height:80vh;overflow:auto"><div class="row"><h2>${title}</h2><button class="secondary" onclick="this.closest('.taur-form-overlay').remove()">CLOSE</button></div>${body}</div></div>`;document.body.appendChild(w)}
 render();
 </script>
-<script src="taur-data-controls-v1.js"></script><script src="taur-pricebook-v1.js"></script><script src="taur-jobfile-xip-v2.js"></script><script src="taur-cloud-sync-v1.js"></script><script src="taur-reinvestment-log-v1.js"></script><script src="DETAILING_QC_ENGINE.js"></script><script src="taur-operations-v1.js"></script><script src="taur-growth-v1.js"></script><script src="taur-integrity-v1.js"></script><script src="taur-home-command-center-v1.js"></script><script src="taur-customer-timeline-v1.js"></script><script src="taur-vehicle-history-v1.js"></script><script src="taur-growth-linking-v1.js"></script><script src="taur-job-linking-v1.js"></script><script src="taur-pricebook-bridge-v1.js"></script><script src="taur-new-job-linking-v1.js"></script><script src="taur-operational-ux-v1.js"></script><script src="taur-field-ux-v1.js"></script><script src="taur-payment-ledger-v1.js"></script><script src="taur-visual-system-v1.js"></script><script src="taur-visual-system-v2.js"></script></body></html>
+</body></html>
