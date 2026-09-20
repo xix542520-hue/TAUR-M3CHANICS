@@ -25,7 +25,29 @@
  .taur-division-strip{display:flex;gap:7px;margin:0 0 12px}.taur-division-strip button{flex:1;background:#151515;border:1px solid #303030}.taur-division-strip .mech{border-color:rgba(215,25,32,.55);color:#ff8b8f}.taur-division-strip .det{border-color:rgba(22,119,255,.55);color:#8dbbff}
  .taur-quick-action{width:100%;margin:4px 0 8px;font-size:14px;min-height:48px}
  .taur-empty{padding:22px 12px;text-align:center;border:1px dashed #303030;border-radius:10px;color:#777}
- @media(min-width:700px){main{padding-left:18px;padding-right:18px}.grid{gap:10px}}
+ .section{margin:18px 0}
+ .row{gap:10px;align-items:center}
+ .card,.item{border-radius:14px;padding:14px}
+ .card .row,.item .row{margin-bottom:4px}
+ button{min-height:46px;border-radius:10px;padding:11px 14px;font-weight:850}
+ button.wide{min-height:50px}
+ input,select,textarea{min-height:46px;border-radius:10px;padding:11px 12px}
+ textarea{min-height:96px}
+ label{display:block;margin-top:7px;font-size:10px;font-weight:900;letter-spacing:.7px}
+ .taur-xip-modal{align-items:center!important;padding:16px!important}
+ .taur-xip-card{max-width:760px!important;max-height:calc(100vh - 32px)!important;border-radius:18px!important;padding:20px!important}
+ .taur-xip-title{font-size:21px!important;margin-bottom:16px!important}
+ .taur-xip-grid{gap:10px!important}
+ .taur-xip-actions{position:sticky;bottom:0;padding-top:10px;background:linear-gradient(transparent,#101010 18%);z-index:2}
+ .taur-pb-modal{align-items:center!important;padding:16px!important}
+ .taur-pb-card{max-width:760px!important;max-height:calc(100vh - 32px)!important;border-radius:18px!important;padding:20px!important}
+ .taur-pb-choice{min-height:58px!important;border-radius:12px!important}
+ .taur-pb-choice input{accent-color:var(--taur-blue);transform:scale(1.15)}
+ .taur-jfx-card{border-radius:18px!important}
+ .taur-dc-modal{align-items:center!important;padding:16px!important}
+ .taur-dc-card{max-width:700px!important;max-height:calc(100vh - 32px)!important;border-radius:18px!important}
+ @media(min-width:700px){main{padding-left:24px;padding-right:24px}.grid{gap:12px}}
+ @media(max-width:600px){main{padding-bottom:105px}.taur-xip-card,.taur-pb-card{padding:15px!important}.taur-xip-actions{grid-template-columns:1fr 1fr}.taur-xip-actions button{min-height:50px}}
  `;document.head.appendChild(style);
  const classify=()=>document.querySelectorAll('.item,.card').forEach(el=>{const t=(el.textContent||'').toUpperCase();const detail=/\bDETAILING\b|\bDETAIL JOBS\b|\bNEW DETAIL\b/.test(t),mech=/\bMECHANIC\b/.test(t);el.classList.toggle('taur-detail-accent',detail&&!mech);el.classList.toggle('taur-mechanic-accent',mech&&!detail)});
  classify();new MutationObserver(classify).observe(document.body,{childList:true,subtree:true});window.taurVisualSystemV3=true;
