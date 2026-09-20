@@ -74,6 +74,7 @@ jobs:
             'growth lead UI is form-based':'Lead — Name | Phone' not in growth,
             'growth estimate UI is form-based':'Estimate — Customer | Service | Amount' not in growth,
             'redundant follow-up module removed':'taur-followup-actions-v1.js' not in idx,
+            'mobile touch layout present':'env(safe-area-inset-bottom)' in idx or 'env(safe-area-inset-bottom)' in Path('taur-visual-system-v2.js').read_text(encoding='utf-8'),
           }
           failed=[name for name,ok in checks.items() if not ok]
           if failed: raise SystemExit('Invariant failures: '+', '.join(failed))
