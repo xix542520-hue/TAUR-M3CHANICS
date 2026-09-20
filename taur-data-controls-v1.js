@@ -64,7 +64,7 @@
     j.condition=w.querySelector('#eCondition').value;
     j.vehicleSize=w.querySelector('#eSize').value;
     j.leadSource=w.querySelector('#eLead').value;
-    if(Array.isArray(selected)&&selected.length){j.priceBookSelections=selected.map(x=>({id:x.id,name:x.name,price:Number(x.price||0),type:x.type}));j.addOns=j.priceBookSelections.slice();}
+    if(Array.isArray(selected)){j.priceBookSelections=selected.map(x=>({id:x.id,name:x.name,price:Number(x.price||0),type:x.type}));j.addOns=j.priceBookSelections.slice();}
     else if(nextType!==type) {j.priceBookSelections=[];j.addOns=[];}
     j.updated=new Date().toISOString();
     delete j.__editPackageSelection;
