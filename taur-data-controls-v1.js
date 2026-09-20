@@ -48,9 +48,9 @@
   typeEl.onchange=()=>{j.__editPackageSelection=[];refillPackages();};
   w.querySelector('#dcCancel').onclick=close;
   w.querySelector('#dcSave').onclick=()=>{
-    const nextStage=w.querySelector('#eStage').value,nextStatus=w.querySelector('#eStatus').value;
+    const nextStage=w.querySelector('#eStage').value,nextStatus=w.querySelector('#eStatus').value,nextType=typeEl.value;
     if(nextType==='DETAILING'&&(nextStage==='COMPLETE'||nextStatus==='COMPLETE')){const gate=detailQcGate({...j,type:nextType});if(!gate.ok)return alert(gate.reason+'. Use VERIFY FINAL QC before completing this detail job.')}
-    const nextType=typeEl.value,selected=j.__editPackageSelection;
+    const selected=j.__editPackageSelection;
     j.customerId=w.querySelector('#eCustomer').value;
     j.vehicleId=w.querySelector('#eVehicle').value;
     j.type=nextType;
