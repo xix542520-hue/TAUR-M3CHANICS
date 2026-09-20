@@ -47,6 +47,12 @@
  .taur-dc-modal{align-items:center!important;padding:16px!important}
  .taur-dc-card{max-width:700px!important;max-height:calc(100vh - 32px)!important;border-radius:18px!important}
  @media(min-width:700px){main{padding-left:24px;padding-right:24px}.grid{gap:12px}}
+
+ /* SCROLL SAFETY: every full-screen overlay owns its vertical scroll instead of locking content behind the viewport. */
+ #taurGrowth,#taurGrowthForm,#taurEstimateForm,.taur-xip-modal,.taur-pb-modal,.taur-dc-modal,.taur-jobfile-xip{box-sizing:border-box;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+ #taurGrowth,#taurGrowthForm,#taurEstimateForm,.taur-xip-modal,.taur-pb-modal,.taur-dc-modal,.taur-jobfile-xip{overflow-y:auto;overflow-x:hidden}
+ .tg-card,.taur-xip-card,.taur-pb-card,.taur-dc-card,.taur-jfx-card{min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+ body{overscroll-behavior-y:auto}
  @media(max-width:600px){
   :root{font-size:16px}
   html,body{width:100%;min-width:0;overflow-x:hidden;-webkit-text-size-adjust:100%}
