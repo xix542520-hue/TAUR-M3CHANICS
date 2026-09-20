@@ -68,8 +68,13 @@
   .taur-division-strip{display:grid;grid-template-columns:1fr 1fr;gap:7px}
   .taur-quick-action{font-size:13px;margin:6px 0 10px}
   nav{position:fixed!important;left:0;right:0;bottom:0;z-index:80;padding:5px 5px calc(5px + env(safe-area-inset-bottom));display:grid!important;grid-template-columns:repeat(6,1fr);gap:3px;box-sizing:border-box;border-top:1px solid #292929}
-  nav button{min-height:58px!important;padding:7px 2px!important;font-size:8px!important;border-radius:10px}
+  nav button{min-height:58px!important;padding:6px 2px!important;font-size:8px!important;border-radius:10px}
   nav button .icon{font-size:17px}
+  .taur-xip-bar{bottom:calc(72px + env(safe-area-inset-bottom))}
+  .taur-xip-label{top:58px}
+  .taur-jfx-head{position:sticky;top:-15px;z-index:4;padding:3px 0 9px;background:#111}
+  .taur-jfx-card>section,.taur-jfx-card>.taur-jfx-package,.taur-jfx-card>.taur-jfx-qc{margin-top:10px}
+  .taur-jfx-card label{font-size:9px}
   .taur-xip-bar{left:8px;right:8px;bottom:72px;grid-template-columns:repeat(2,1fr);gap:6px;max-width:none}
   .taur-xip-bar button{min-height:48px;font-size:10px}
   .taur-xip-label{top:62px;left:10px}
