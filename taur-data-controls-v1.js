@@ -49,7 +49,7 @@
   w.querySelector('#dcCancel').onclick=close;
   w.querySelector('#dcSave').onclick=()=>{
     const nextStage=w.querySelector('#eStage').value,nextStatus=w.querySelector('#eStatus').value;
-    if(j.type==='DETAILING'&&(nextStage==='COMPLETE'||nextStatus==='COMPLETE')){const gate=detailQcGate(j);if(!gate.ok)return alert(gate.reason+'. Use VERIFY FINAL QC before completing this detail job.')}
+    if(nextType==='DETAILING'&&(nextStage==='COMPLETE'||nextStatus==='COMPLETE')){const gate=detailQcGate({...j,type:nextType});if(!gate.ok)return alert(gate.reason+'. Use VERIFY FINAL QC before completing this detail job.')}
     const nextType=typeEl.value,selected=j.__editPackageSelection;
     j.customerId=w.querySelector('#eCustomer').value;
     j.vehicleId=w.querySelector('#eVehicle').value;
