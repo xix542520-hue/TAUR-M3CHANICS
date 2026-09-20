@@ -142,7 +142,7 @@ render();
       const title=w.querySelector('#xTitle').value;
       if(!cid)return alert('Select a customer.');
       const id=uid(),now=new Date().toISOString();
-      db.jobs.push({id,created:now,updated:now,type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total:Number(w.querySelector('#xTotal').value||0),warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:[],leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value});
+      db.jobs.push({id,created:now,updated:now,type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total:Number(w.querySelector('#xTotal').value||0),warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:Array.isArray(w.__taurPriceSelection)?w.__taurPriceSelection:[],priceBookSelections:Array.isArray(w.__taurPriceSelection)?w.__taurPriceSelection:[],leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value});
       save();close();go('jobs');
     });
     const cust=document.querySelector('#xCustomer'),veh=document.querySelector('#xVehicle');
