@@ -24,7 +24,7 @@ nav{background:rgba(10,10,10,.98);border-top:1px solid #303030;box-shadow:0 -8px
 .item button,.card button{min-height:38px;padding:8px 10px}
 /* Hide nonessential empty visual noise. */
 .hide{display:none!important}
-@media(max-width:560px){main{padding:13px 10px 104px}.grid{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:1fr 1fr}.card,.item{padding:11px}.stat{font-size:24px}h2{font-size:15px}button{min-height:44px}.item .row:last-child{align-items:stretch}.item .row:last-child button{flex:0 1 auto}}
+@media(max-width:560px){html,body{width:100%;min-width:0;overflow-x:hidden;-webkit-text-size-adjust:100%}main{padding:10px 10px 118px}.grid{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}.card,.item{padding:13px;border-radius:13px}.row{flex-wrap:wrap}.stat{font-size:24px}h2{font-size:15px}button{min-height:48px;padding:11px 13px}input,select,textarea{min-height:48px;font-size:16px!important;padding:11px 12px}textarea{min-height:108px}.item .row:last-child{align-items:stretch}.item .row:last-child button{flex:0 1 auto}}
 @media(min-width:800px){nav{position:fixed;top:0;bottom:auto;left:auto;right:18px;width:auto;border:0;background:transparent;box-shadow:none;display:flex;padding:13px 0}nav button{min-height:36px;padding:8px 10px;border:1px solid #252525;border-radius:6px;background:#0d0d0d;font-size:9px}nav button.active{border:1px solid var(--red);border-top-color:var(--red);background:#180b0c}}
 `;
  document.head.appendChild(style);
