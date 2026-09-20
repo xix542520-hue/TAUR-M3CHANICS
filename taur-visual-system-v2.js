@@ -47,7 +47,51 @@
  .taur-dc-modal{align-items:center!important;padding:16px!important}
  .taur-dc-card{max-width:700px!important;max-height:calc(100vh - 32px)!important;border-radius:18px!important}
  @media(min-width:700px){main{padding-left:24px;padding-right:24px}.grid{gap:12px}}
- @media(max-width:600px){main{padding-bottom:105px}.taur-xip-card,.taur-pb-card{padding:15px!important}.taur-xip-actions{grid-template-columns:1fr 1fr}.taur-xip-actions button{min-height:50px}}
+ @media(max-width:600px){
+  :root{font-size:16px}
+  html,body{width:100%;min-width:0;overflow-x:hidden;-webkit-text-size-adjust:100%}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  header{position:sticky;top:0;z-index:60;padding:10px 12px 8px}
+  .logo{font-size:20px;letter-spacing:2px}.tag{font-size:8px;letter-spacing:1.5px}
+  main{width:100%;box-sizing:border-box;padding:10px 10px calc(118px + env(safe-area-inset-bottom));max-width:none}
+  h2{font-size:15px;margin:8px 0}h3{font-size:13px}
+  .section{margin:12px 0}.grid{grid-template-columns:1fr!important;gap:8px!important}
+  .card,.item{padding:13px;border-radius:13px}
+  .row{flex-wrap:wrap;gap:7px}
+  .row>*{max-width:100%}
+  button{min-height:48px;padding:12px 13px;font-size:12px}
+  button.wide,.taur-quick-action{min-height:52px}
+  input,select,textarea{width:100%;box-sizing:border-box;min-height:48px;font-size:16px!important;padding:12px!important}
+  textarea{min-height:110px}
+  label{font-size:9px;margin-top:9px}
+  table{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .taur-division-strip{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .taur-quick-action{font-size:13px;margin:6px 0 10px}
+  nav{position:fixed!important;left:0;right:0;bottom:0;z-index:80;padding:5px 5px calc(5px + env(safe-area-inset-bottom));display:grid!important;grid-template-columns:repeat(6,1fr);gap:3px;box-sizing:border-box;border-top:1px solid #292929}
+  nav button{min-height:58px!important;padding:7px 2px!important;font-size:8px!important;border-radius:10px}
+  nav button .icon{font-size:17px}
+  .taur-xip-bar{left:8px;right:8px;bottom:72px;grid-template-columns:repeat(2,1fr);gap:6px;max-width:none}
+  .taur-xip-bar button{min-height:48px;font-size:10px}
+  .taur-xip-label{top:62px;left:10px}
+  .taur-xip-modal,.taur-pb-modal,.taur-dc-modal{align-items:flex-end!important;padding:0!important}
+  .taur-xip-card,.taur-pb-card,.taur-dc-card{width:100%!important;max-width:none!important;max-height:92vh!important;border-radius:20px 20px 0 0!important;padding:15px 13px calc(18px + env(safe-area-inset-bottom))!important}
+  .taur-xip-title{font-size:19px!important}
+  .taur-xip-grid{grid-template-columns:1fr!important}
+  .taur-xip-full{grid-column:auto}
+  .taur-xip-actions{grid-template-columns:1fr 1fr!important;position:sticky;bottom:0;padding:10px 0 calc(4px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#101010 20%);margin-bottom:-4px}
+  .taur-xip-actions button{min-height:52px}
+  .taur-pb-choice{min-height:64px!important;padding:11px!important}
+  .taur-jfx-card{width:100%;box-sizing:border-box;padding:14px!important;border-radius:20px!important}
+  .taur-jfx-grid{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}
+  .taur-jfx-money{grid-template-columns:1fr!important}
+  .taur-jfx-actions{grid-template-columns:1fr!important}
+  .taur-jfx-card input,.taur-jfx-card select,.taur-jfx-card textarea{font-size:16px!important}
+  .taur-jfx-actions button{min-height:52px}
+  .taur-dc-grid{grid-template-columns:1fr!important}
+  .taur-dc-pick{min-height:58px}
+  .taur-cloud-panel,.taur-growth-panel,.taur-partner-panel{max-width:100vw!important}
+  [style*="position:fixed"][style*="max-width"]{max-width:calc(100vw - 20px)!important}
+ }
  `;document.head.appendChild(style);
  const classify=()=>document.querySelectorAll('.item,.card').forEach(el=>{const t=(el.textContent||'').toUpperCase();const detail=/\bDETAILING\b|\bDETAIL JOBS\b|\bNEW DETAIL\b/.test(t),mech=/\bMECHANIC\b/.test(t);el.classList.toggle('taur-detail-accent',detail&&!mech);el.classList.toggle('taur-mechanic-accent',mech&&!detail)});
  classify();new MutationObserver(classify).observe(document.body,{childList:true,subtree:true});window.taurVisualSystemV3=true;
