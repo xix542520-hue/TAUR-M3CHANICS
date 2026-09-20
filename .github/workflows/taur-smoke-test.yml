@@ -47,6 +47,10 @@ jobs:
           jf=Path('taur-jobfile-xip-v2.js').read_text(encoding='utf-8')
           hq=Path('taur-home-command-center-v1.js').read_text(encoding='utf-8')
           pn=Path('taur-partner-network-v1.js').read_text(encoding='utf-8')
+          pb=Path('taur-pricebook-v1.js').read_text(encoding='utf-8')
+          ops=Path('taur-operations-v1.js').read_text(encoding='utf-8')
+          growth=Path('taur-growth-v1.js').read_text(encoding='utf-8')
+          idx=Path('index.html').read_text(encoding='utf-8')
           checks={
             'payment ledger exposes base payment calculation':'window.taurPaymentBase=base' in ledger,
             'payment ledger preserves tip separately':'p?.tip!=null' in ledger,
@@ -64,6 +68,12 @@ jobs:
             'partner referrals store partner IDs':'partnerId:pid' in pn,
             'partner referrals can link a job':'jobId:jid' in pn,
             'partner referrals can open linked Job Files':'data-ref-job' in pn,
+            'pricebook supports multiple selections':'type.addEventListener(\'change\'' in pb and 'selected=new Map()' in pb,
+            'jobs persist package selections':'priceBookSelections:Array.isArray(w.__taurPriceSelection)' in idx,
+            'follow-ups use exact job IDs':'data-open-job' in ops,
+            'growth lead UI is form-based':'Lead — Name | Phone' not in growth,
+            'growth estimate UI is form-based':'Estimate — Customer | Service | Amount' not in growth,
+            'redundant follow-up module removed':'taur-followup-actions-v1.js' not in idx,
           }
           failed=[name for name,ok in checks.items() if not ok]
           if failed: raise SystemExit('Invariant failures: '+', '.join(failed))
