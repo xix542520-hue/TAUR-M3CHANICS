@@ -43,7 +43,6 @@ jobs:
             '<script src="taur-field-ux-v1.js"></script>',
             '<script src="taur-payment-ledger-v1.js"></script>',
             '<script src="taur-visual-system-v2.js"></script>',
-            '<script src="taur-followup-actions-v1.js"></script>',
             '<script src="taur-partner-network-v1.js"></script>',
           ]
           if '</body>' not in s:
