@@ -81,7 +81,7 @@
   .taur-xip-actions{grid-template-columns:1fr 1fr!important;position:sticky;bottom:0;padding:10px 0 calc(4px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#101010 20%);margin-bottom:-4px}
   .taur-xip-actions button{min-height:52px}
   .taur-pb-choice{min-height:64px!important;padding:11px!important}
-  .taur-jfx-card{width:100%;box-sizing:border-box;padding:14px!important;border-radius:20px!important}
+  .taur-jobfile-xip{padding:0!important;align-items:flex-end!important}.taur-jfx-card{width:100%;box-sizing:border-box;padding:14px!important;border-radius:20px 20px 0 0!important;max-height:92vh;overflow:auto}
   .taur-jfx-grid{grid-template-columns:repeat(2,1fr)!important;gap:7px!important}
   .taur-jfx-money{grid-template-columns:1fr!important}
   .taur-jfx-actions{grid-template-columns:1fr!important}
