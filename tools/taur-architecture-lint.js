@@ -5,6 +5,10 @@ const path = require('path');
 const ROOT = process.cwd();
 const EXCLUDE = new Set(['node_modules','.git']);
 const FILE_EXT = new Set(['.js','.html']);
+const CONTRACTS=[
+  {name:'cloud sync must delegate reconciliation',file:'taur-cloud-sync-v1.js',required:['TAUR_CLOUD_RECONCILIATION.mergeRecords','TAUR_CLOUD_RECONCILIATION.applyTombstones','TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan','TAUR_CLOUD_RECONCILIATION.compareRecordState']},
+  {name:'standalone reconciliation must stay runtime-independent',file:'taur-cloud-reconciliation-v1.js',forbidden:['localStorage','document','supabase','fetch','alert','confirm']}
+];
 const FORBIDDEN = [
   {name:'direct canonical collection mutation', re:/\bdb\.(customers|vehicles|jobs|quotes|payments|parts|pricing|tools|research|settings|leads|estimates|partners|referrals|tombstones)\.(push|splice|pop|shift|unshift)\s*\(/g},
   {name:'direct canonical collection reassignment', re:/\bdb\.(customers|vehicles|jobs|quotes|payments|parts|pricing|tools|research|settings|leads|estimates|partners|referrals|tombstones)\s*=/g},
@@ -33,6 +37,14 @@ for(const file of files){
       violations.push({file:path.relative(ROOT,file),line,rule:rule.name,source:lineText});
     }
   }
+}
+
+for(const contract of CONTRACTS){
+  const filePath=path.join(ROOT,contract.file);
+  if(!fs.existsSync(filePath)){violations.push({file:contract.file,line:1,rule:contract.name,source:'missing file'});continue;}
+  const text=fs.readFileSync(filePath,'utf8');
+  for(const token of contract.required||[]) if(!text.includes(token)) violations.push({file:contract.file,line:1,rule:contract.name,source:'missing required token: '+token});
+  for(const token of contract.forbidden||[]) if(text.includes(token)) violations.push({file:contract.file,line:1,rule:contract.name,source:'forbidden dependency: '+token});
 }
 
 console.log('TAUR ARCHITECTURE LINT');
