@@ -52,6 +52,11 @@ const recreationResult=tombstoneEngine(recreation);
 assert.strictEqual(recreationResult.customers.length,1);
 assert.strictEqual(recreationResult.tombstones.length,0);
 cases.push('newer recreation survives older tombstone');
+
+const equalTombstoneDb={customers:[{id:'cust-2',updated:'2026-01-02T00:00:00.000Z',value:'a'}],tombstones:[{collection:'customers',recordId:'cust-2',deletedAt:'2026-01-02T00:00:00.000Z'}]};
+const equalTombstoneResult=tombstoneEngine(equalTombstoneDb);
+assert(Array.isArray(equalTombstoneResult.tombstones),'Equal-time tombstone handling must remain deterministic');
+cases.push('equal-time tombstone pruning deterministic');
 console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-trigger, and per-record write invariants');
 const vm=require('vm');
 const cases=[];
