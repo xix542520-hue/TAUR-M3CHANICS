@@ -77,6 +77,16 @@ const recreation={customers:[{id:'cust-1',updated:'2026-01-03T00:00:00.000Z'}],t
 check('newer recreation survives and clears tombstone',()=>{const out=reconciliation.applyTombstones(recreation);assert.strictEqual(out.customers.length,1);assert.strictEqual(out.tombstones.length,0)});
 const equalTombstoneRecord={id:'cust-tie',updated:'2026-01-02T00:00:00.000Z',a:1,b:2};
 const equalTombstone={customers:[equalTombstoneRecord],tombstones:[{collection:'customers',recordId:'cust-tie',deletedAt:'2026-01-02T00:00:00.000Z',b:2,a:1}]};
+check('duplicate tombstones collapse to one canonical deletion',()=>{
+ const input={customers:[],tombstones:[
+  {collection:'customers',recordId:'dup',deletedAt:'2026-01-01T00:00:00.000Z'},
+  {collection:'customers',recordId:'dup',deletedAt:'2026-01-02T00:00:00.000Z'},
+  {collection:'customers',recordId:'dup',deletedAt:'2026-01-01T00:00:00.000Z',note:'older'}
+ ]};
+ const out=reconciliation.applyTombstones(input);
+ assert.strictEqual(out.tombstones.length,1);
+ assert.strictEqual(out.tombstones[0].deletedAt,'2026-01-02T00:00:00.000Z');
+});
 check('equal-time tombstone resolution is deterministic',()=>{
   const first=reconciliation.applyTombstones(equalTombstone);
   const second=reconciliation.applyTombstones(JSON.parse(JSON.stringify(equalTombstone)));
