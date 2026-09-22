@@ -350,8 +350,8 @@
       transactionActive = false;
       const committedTransactionId = transactionId;
       saveDb();
-      emit('TRANSACTION_COMMITTED',{at:now(),transactionId:committedTransactionId});
       flushTransactionEvents();
+      emit('TRANSACTION_COMMITTED',{at:now(),transactionId:committedTransactionId,eventCount:transactionEvents.length});
       transactionEvents = previousEvents;
       transactionId = '';
       return result;
