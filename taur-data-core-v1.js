@@ -316,6 +316,50 @@
     }
   };
 
+  root.tests = {
+    run: function(){
+      const snapshot = JSON.stringify(db);
+      const results = [];
+      const assert = (name, condition) => {
+        results.push({name,pass:!!condition});
+        if(!condition) throw new Error(name);
+      };
+      try{
+        const customer = customers.create({name:'__TAUR_TEST_CUSTOMER__'});
+        assert('customer create', !!customer);
+        const vehicle = vehicles.create({customerId:customer.id,make:'TEST',model:'TEST'});
+        assert('vehicle create', !!vehicle);
+        assert('invalid vehicle reference rejected', vehicles.create({customerId:'__missing__'}) === null);
+        const job = jobs.create({customerId:customer.id,vehicleId:vehicle.id,total:100});
+        assert('job create', !!job);
+        assert('customer/vehicle mismatch rejected', jobs.create({customerId:'__other__',vehicleId:vehicle.id}) === null);
+        assert('invalid payment reference rejected', payments.create({jobId:'__missing__',amount:10}) === null);
+        const payment = payments.create({jobId:job.id,baseAmount:80,tip:20});
+        assert('payment create', !!payment);
+        assert('base payment excludes tip', payments.baseForJob(job.id) === 80);
+        assert('tip tracked separately', payments.tipsForJob(job.id) === 20);
+        assert('job balance uses base payment', jobs.balance(job.id) === 20);
+        assert('dependent customer delete blocked', customers.remove(customer.id) === null);
+        const rollbackResult = transaction(()=>{
+          const temp = customers.create({name:'__TAUR_ROLLBACK__'});
+          assert('transaction create', !!temp);
+          return false;
+        });
+        assert('transaction rollback', rollbackResult === null && !customers.list().some(x=>x.name==='__TAUR_ROLLBACK__'));
+        const tombstone = remove('payments',payment.id);
+        assert('safe delete creates tombstone', !!tombstone && !!tombstones.get('payments:'+payment.id));
+        return {ok:true,results};
+      }catch(error){
+        return {ok:false,error:error?.message||String(error),results};
+      }finally{
+        const restored = JSON.parse(snapshot);
+        Object.keys(db).forEach(k=>delete db[k]);
+        Object.assign(db,restored);
+        saveDb();
+      }
+    }
+  };
+
   root.storage = {
     key: (typeof KEY !== 'undefined' ? KEY : 'TAUR_M3CHANICS_FINAL_V1'),
     save: saveDb
