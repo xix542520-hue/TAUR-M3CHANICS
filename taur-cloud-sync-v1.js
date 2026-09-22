@@ -84,8 +84,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  window.taurCloudDiagnostics=()=>({remoteReady,businessId:!!businessId,syncing,loadingRemote,lastReconciliationPlan:lastReconciliationPlan?JSON.parse(JSON.stringify(lastReconciliationPlan)):null});
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
-   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   const reconciliationPlan=buildReconciliationPlan(local,remoteRows); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
-   if(remoteError)throw remoteError;
+   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   if(remoteError)throw remoteError;
    const merged={...local};
    for(const row of remoteRows||[]){
      if(!COLLECTIONS.includes(row.collection))continue;
@@ -98,6 +97,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    }
    applyTombstones(merged);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
+   const reconciliationPlan=buildReconciliationPlan(merged,remoteRows); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
    const staleByCollection={};
    for(const collection of COLLECTIONS){
      if(collection==='settings'){
@@ -107,8 +107,18 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      }
      const rows=Array.isArray(merged[collection])?merged[collection]:[];
      const localIds=new Set(rows.filter(r=>r?.id).map(r=>String(r.id)));
+     const actions=reconciliationPlan.collections[collection]?.actions||{};
+     const remoteById=new Map((remoteRows||[]).filter(row=>row.collection===collection&&String(row.record_id)!==collection).map(row=>[String(row.record_id),row]));
      const syncTimestamp=new Date().toISOString();
-     const payloadRows=rows.filter(record=>record?.id).map(record=>({
+     const payloadRows=rows.filter(record=>{
+       if(!record?.id)return false;
+       const id=String(record.id);
+       if(!remoteById.has(id))return true;
+       const remote=remoteById.get(id);
+       const localTime=Date.parse(record.updated||record.created||0)||0;
+       const remoteTime=Date.parse(remote.updated_at||remote.payload?.updated||remote.payload?.created||0)||0;
+       return JSON.stringify(remote.payload||{})!==JSON.stringify(record) && localTime>=remoteTime;
+     }).map(record=>({
        business_id:businessId,
        collection,
        record_id:String(record.id),
