@@ -1,7 +1,7 @@
 /* TAUR CLOUD SYNC V3 — shared partner network collections */
 (()=>{
  const SUPABASE_URL='https://pgvicmzjrrqimwftftuj.supabase.co',SUPABASE_KEY='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h',KEY='TAUR_M3CHANICS_FINAL_V1';
- const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','leads','estimates','partners','referrals'];
+ const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','leads','estimates','partners','referrals','tombstones'];
  const LEGACY_GROWTH_COLLECTIONS=['growth_leads','growth_estimates'];
  let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null;
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -28,6 +28,11 @@
    else db[r.collection]=r.payload;
  }
  db.leads=mergeById(db.leads,legacyGrowth.leads); db.estimates=mergeById(db.estimates,legacyGrowth.estimates);
+ const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];
+ for(const t of tombstones){
+   if(!t?.collection||!t?.recordId)continue;
+   if(Array.isArray(db[t.collection])) db[t.collection]=db[t.collection].filter(x=>x?.id!==t.recordId);
+ }
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  async function syncNow(){if(!client||!businessId||syncing)return false;const db=localDb();if(!db)return false;syncing=true;try{for(const c of COLLECTIONS){const payload=(db[c]??(c==='settings'?{}:[]));const {error}=await client.from('app_records').upsert({business_id:businessId,collection:c,record_id:c,payload,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});if(error)throw error}remoteReady=true;statusBar(true,'SYNCED');return true}catch(e){console.error(e);toast('Cloud sync failed: '+(e.message||e));return false}finally{syncing=false}}
  async function migrateLocal(){if(!client||!businessId)return;const db=localDb();if(!db)return;const {data,error}=await client.from('app_records').select('collection').eq('business_id',businessId).limit(1);if(error)return toast('Could not check cloud: '+error.message);if((data||[]).length&&!confirm('Cloud data already exists. Replace it with this device\'s current data?'))return;if(await syncNow()){toast('Local TAUR data uploaded to shared cloud',true);openPanel()}}
@@ -39,6 +44,6 @@
  async function invite(){const w=document.createElement('div');w.className='taur-cloud-invite';w.innerHTML='<div class="taur-cloud-invite-card"><b>INVITE PARTNER</b><label>PARTNER EMAIL</label><input id="taurInviteEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com"><div class="taur-cloud-invite-actions"><button class="secondary" id="taurInviteCancel">CANCEL</button><button id="taurInviteSend">SEND INVITE</button></div></div>';document.body.appendChild(w);w.querySelector('#taurInviteCancel').onclick=()=>w.remove();w.querySelector('#taurInviteSend').onclick=async()=>{const email=w.querySelector('#taurInviteEmail').value.trim();if(!email)return alert('Enter a partner email.');const {error}=await client.rpc('invite_business_member',{invite_email:email,member_role:'partner'});if(error)return alert(error.message);w.remove();toast('Partner added.');renderPanelBody()};w.querySelector('#taurInviteEmail').focus()}
  function subscribe(){if(!client||!businessId)return;if(channel)client.removeChannel(channel);channel=client.channel('taur-cloud-records').on('postgres_changes',{event:'*',schema:'public',table:'app_records',filter:`business_id=eq.${businessId}`},()=>{if(!syncing&&!loadingRemote)loadRemote().catch(console.error)}).subscribe()}
  let scheduled=null;const queue=()=>{if(!remoteReady||syncing||loadingRemote)return;statusBar(true,'SAVING');clearTimeout(scheduled);scheduled=setTimeout(()=>syncNow(),1200)};const originalSet=localStorage.setItem.bind(localStorage);localStorage.setItem=function(k,v){originalSet(k,v);if(k===KEY||k==='TAUR_GROWTH_V1')queue()};window.addEventListener('beforeunload',()=>{if(remoteReady)syncNow()});window.addEventListener('taur-cloud-sync',queue);
- if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='DATA_SAVED')queue()});}
+ if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='TOMBSTONE_CREATED'||e.type==='DATA_SAVED')queue()});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
