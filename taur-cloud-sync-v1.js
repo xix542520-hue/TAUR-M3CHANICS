@@ -13,8 +13,20 @@
  function statusBar(on,state){let h=document.getElementById('taurCloudHeader');if(!h){h=document.createElement('div');h.id='taurCloudHeader';h.style.cssText='position:fixed;right:10px;top:76px;z-index:40;font-size:9px;font-weight:900;letter-spacing:1px;background:#171717;border:1px solid #333;border-radius:20px;padding:6px 9px;color:#aaa;cursor:pointer';document.body.appendChild(h);h.onclick=openPanel}h.textContent=on?('☁ '+(state||'SYNCED')):'☁ SIGN IN';h.style.color=on?'#bfe6bf':'#ddd'}
  async function signedIn(session){remoteReady=false;try{const {data,error}=await client.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(error)throw error;businessId=data;localStorage.setItem('TAUR_BUSINESS_ID',businessId);await loadRemote();subscribe();remoteReady=true;await syncNow();statusBar(true);toast('TAUR CLOUD connected',true)}catch(e){console.error(e);toast('Cloud connection error: '+(e.message||e))}}
  async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
- const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};for(const r of data||[]){if(!COLLECTIONS.includes(r.collection)&&!LEGACY_GROWTH_COLLECTIONS.includes(r.collection))continue;if(r.collection.startsWith('growth_')){const k=r.collection.replace('growth_',''),remote=Array.isArray(r.payload)?r.payload:[],seen=new Set(legacyGrowth[k].map(x=>x?.id).filter(Boolean));legacyGrowth[k]=legacyGrowth[k].concat(remote.filter(x=>x?.id&&!seen.has(x.id)));continue}if(Array.isArray(r.payload)){const remote=r.payload,local=Array.isArray(db[r.collection])?db[r.collection]:[],seen=new Set(remote.map(x=>x?.id).filter(Boolean));db[r.collection]=remote.concat(local.filter(x=>x?.id&&!seen.has(x.id)))}else db[r.collection]=r.payload}
- const mergeById=(a,b)=>{const out=[...(Array.isArray(a)?a:[])],seen=new Set(out.map(x=>x?.id).filter(Boolean));(Array.isArray(b)?b:[]).forEach(x=>{if(x?.id&&!seen.has(x.id)){out.push(x);seen.add(x.id)}});return out};
+ const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
+ const newer=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||0)||0,tb=Date.parse(b?.updated||b?.created||0)||0;return tb>ta?b:a};
+ const mergeById=(local,remote)=>{const map=new Map();(Array.isArray(local)?local:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(remote)?remote:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newer(map.get(x.id),x):x)});return [...map.values()]};
+ for(const r of data||[]){
+   if(!COLLECTIONS.includes(r.collection)&&!LEGACY_GROWTH_COLLECTIONS.includes(r.collection))continue;
+   if(r.collection.startsWith('growth_')){
+     const k=r.collection.replace('growth_','');
+     legacyGrowth[k]=mergeById(legacyGrowth[k],Array.isArray(r.payload)?r.payload:[]);
+     continue;
+   }
+   if(Array.isArray(r.payload)) db[r.collection]=mergeById(db[r.collection],r.payload);
+   else if(r.collection==='settings') db.settings={...(db.settings||{}),...(r.payload||{})};
+   else db[r.collection]=r.payload;
+ }
  db.leads=mergeById(db.leads,legacyGrowth.leads); db.estimates=mergeById(db.estimates,legacyGrowth.estimates);
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  async function syncNow(){if(!client||!businessId||syncing)return false;const db=localDb();if(!db)return false;syncing=true;try{for(const c of COLLECTIONS){const payload=(db[c]??(c==='settings'?{}:[]));const {error}=await client.from('app_records').upsert({business_id:businessId,collection:c,record_id:c,payload,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});if(error)throw error}remoteReady=true;statusBar(true,'SYNCED');return true}catch(e){console.error(e);toast('Cloud sync failed: '+(e.message||e));return false}finally{syncing=false}}
