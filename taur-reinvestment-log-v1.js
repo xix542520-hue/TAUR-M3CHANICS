@@ -9,10 +9,11 @@
  let sb=null,bid='';
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const money=n=>'$'+Number(n||0).toFixed(2);
- const localDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{jobs:[],payments:[],customers:[],vehicles:[]}}catch{return {jobs:[],payments:[],customers:[],vehicles:[]}}};
+ const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{jobs:[],payments:[],customers:[],vehicles:[]}}catch{return {jobs:[],payments:[],customers:[],vehicles:[]}}};
+ const localDb=()=>window.TAUR?.data?{jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[],customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[]}:legacyDb();
  const C=(db,id)=>db.customers?.find(x=>x.id===id);
  const V=(db,id)=>db.vehicles?.find(x=>x.id===id);
- const paid=(db,id)=>(db.payments||[]).filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0);
+ const paid=(db,id)=>{const rows=window.TAUR?.payments?.forJob?.(id);if(Array.isArray(rows))return rows.reduce((n,p)=>n+Math.max(0,Number(window.TAUR.payments.baseAmount?.(p)??p.amount??0)),0);return (db.payments||[]).filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)};
  const load=async()=>{if(!window.supabase)return;sb=window.supabase.createClient(U,K);const {data:{session}}=await sb.auth.getSession();if(session){bid=localStorage.getItem('TAUR_BUSINESS_ID')||'';if(!bid){const r=await sb.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(!r.error){bid=r.data;localStorage.setItem('TAUR_BUSINESS_ID',bid)}}}};
  async function rows(table){if(!sb||!bid)return[];const r=await sb.from(table).select('*').eq('business_id',bid).order('occurred_at',{ascending:false});if(r.error)throw r.error;return r.data||[]}
  function jobOptions(){const db=localDb(),jobs=(db.jobs||[]).filter(j=>j.type==='DETAILING'||j.type==='MECHANICS').slice().reverse();if(!jobs.length)return '<option value="">No jobs recorded on this device</option>';return '<option value="">SELECT JOB (OPTIONAL)</option>'+jobs.map(j=>{const c=C(db,j.customerId),v=V(db,j.vehicleId),p=paid(db,j.id);return `<option value="${esc(j.id)}">${esc(j.title||'Untitled Job')} · ${esc(c?.name||'No customer')} · ${money(p)} collected</option>`}).join('')}
