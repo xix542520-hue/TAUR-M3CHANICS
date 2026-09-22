@@ -18,6 +18,7 @@
   const EVENT_HISTORY_LIMIT = 250;
   let transactionActive = false;
   let transactionEvents = [];
+  let transactionId = '';
 
   const now = () => new Date().toISOString();
   const asArray = value => Array.isArray(value) ? value : [];
@@ -25,7 +26,7 @@
     Date.now().toString(36) + Math.random().toString(36).slice(2,8));
 
   function recordEvent(type, detail){
-    eventHistory.push({type,detail:detail||null,at:now()});
+    eventHistory.push({type,detail:detail||null,at:now(),transactionId:transactionId||null});
     if(eventHistory.length>EVENT_HISTORY_LIMIT) eventHistory.splice(0,eventHistory.length-EVENT_HISTORY_LIMIT);
   }
   function emit(type, detail){
@@ -330,6 +331,7 @@
     const snapshot = JSON.stringify(db);
     const previousEvents = transactionEvents;
     transactionEvents = [];
+    transactionId = id();
     transactionActive = true;
     try{
       const result = work();
@@ -339,13 +341,16 @@
         Object.assign(db,restored);
         transactionEvents = [];
         transactionActive = false;
+        transactionId = '';
         return null;
       }
       transactionActive = false;
+      const committedTransactionId = transactionId;
       saveDb();
-      emit('TRANSACTION_COMMITTED',{at:now()});
+      emit('TRANSACTION_COMMITTED',{at:now(),transactionId:committedTransactionId});
       flushTransactionEvents();
       transactionEvents = previousEvents;
+      transactionId = '';
       return result;
     }catch(error){
       try{
@@ -355,6 +360,7 @@
       }catch(rollbackError){ console.error('[TAUR DATA] rollback failed',rollbackError); }
       transactionEvents = [];
       transactionActive = false;
+      transactionId = '';
       transactionEvents = previousEvents;
       return validationError('TRANSACTION_FAILED',error?.message||'Transaction failed');
     }
