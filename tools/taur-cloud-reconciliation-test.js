@@ -24,6 +24,16 @@ const plan=reconciliation.buildReconciliationPlan(
 check('planner CREATE count',()=>assert.strictEqual(plan.collections.customers.actions.create,0));
 check('planner UPDATE count',()=>assert.strictEqual(plan.collections.customers.actions.update,1));
 check('planner DELETE count',()=>assert.strictEqual(plan.collections.customers.actions.delete,1));
+const duplicatePlan=reconciliation.buildReconciliationPlan(
+ {customers:[{id:'dup',updated:'2026-01-02T00:00:00.000Z',value:'new'}]},
+ [
+  {collection:'customers',record_id:'dup',payload:{id:'dup',updated:'2026-01-01T00:00:00.000Z',value:'old'},updated_at:'2026-01-01T00:00:00.000Z'},
+  {collection:'customers',record_id:'dup',payload:{id:'dup',updated:'2026-01-02T00:00:00.000Z',value:'new'},updated_at:'2026-01-02T00:00:00.000Z'},
+  {collection:'unknown',record_id:'ghost',payload:{id:'ghost'},updated_at:'2026-01-01T00:00:00.000Z'}
+ ]);
+check('planner duplicate remote IDs collapse deterministically',()=>{assert.strictEqual(duplicatePlan.collections.customers.actions.update,0);assert.strictEqual(duplicatePlan.collections.customers.actions.keep,1);assert.strictEqual(duplicatePlan.totals.delete,0)});
+check('planner ignores unknown collections',()=>assert.strictEqual(duplicatePlan.totals.delete,0));
+
 
 const older={id:'merge-1',updated:'2026-01-01T00:00:00.000Z',value:'old'};
 const newer={id:'merge-1',updated:'2026-01-02T00:00:00.000Z',value:'new'};
