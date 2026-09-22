@@ -119,6 +119,8 @@ const rollbackEvents=sandbox.window.TAUR.events.history().slice(rollbackStart);
 assert(rollbackEvents.some(e=>e.type==='TRANSACTION_ROLLED_BACK'),'Rollback event should be recorded');
 const rollbackLifecycle=rollbackEvents.find(e=>e.type==='TRANSACTION_ROLLED_BACK');
 assert(rollbackLifecycle?.detail?.outcome==='ROLLED_BACK','Rollback lifecycle event should declare ROLLED_BACK outcome');
+assert(rollbackLifecycle?.transactionId===rollbackLifecycle?.detail?.transactionId,'Rollback history entry should retain the transaction ID');
+assert(rollbackLifecycle?.transactionId,'Rollback lifecycle event should be transaction-tagged');
 assert(typeof rollbackLifecycle?.detail?.eventCount==='number','Rollback lifecycle event should declare eventCount');
 assert(!rollbackEvents.some(e=>e.type==='CUSTOMER_CREATED'),'Rolled-back entity events must not leak');
 
