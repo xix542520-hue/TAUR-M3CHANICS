@@ -31,8 +31,22 @@
  const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];
  for(const t of tombstones){
    if(!t?.collection||!t?.recordId)continue;
-   if(Array.isArray(db[t.collection])) db[t.collection]=db[t.collection].filter(x=>x?.id!==t.recordId);
+   if(!Array.isArray(db[t.collection]))continue;
+   const deletedAt=Date.parse(t.deletedAt||0)||0;
+   db[t.collection]=db[t.collection].filter(x=>{
+     if(x?.id!==t.recordId)return true;
+     const updatedAt=Date.parse(x.updated||x.created||0)||0;
+     return updatedAt>deletedAt;
+   });
  }
+ // A record recreated or legitimately updated after deletion supersedes the tombstone.
+ db.tombstones=tombstones.filter(t=>{
+   const record=Array.isArray(db[t?.collection])?db[t.collection].find(x=>x?.id===t.recordId):null;
+   if(!record)return true;
+   const deletedAt=Date.parse(t.deletedAt||0)||0;
+   const updatedAt=Date.parse(record.updated||record.created||0)||0;
+   return updatedAt<=deletedAt;
+ });
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
    const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
@@ -57,6 +71,13 @@
        return updatedAt>deletedAt;
      });
    }
+   merged.tombstones=tombstones.filter(t=>{
+     const record=Array.isArray(merged[t?.collection])?merged[t.collection].find(x=>x?.id===t.recordId):null;
+     if(!record)return true;
+     const deletedAt=Date.parse(t.deletedAt||0)||0;
+     const updatedAt=Date.parse(record.updated||record.created||0)||0;
+     return updatedAt<=deletedAt;
+   });
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
    for(const collection of COLLECTIONS){const payload=(merged[collection]??(collection==='settings'?{}:[]));const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});if(error)throw error}
    remoteReady=true;statusBar(true,'SYNCED');return true;
