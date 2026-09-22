@@ -57,6 +57,16 @@ const equalTombstoneDb={customers:[{id:'cust-2',updated:'2026-01-02T00:00:00.000
 const equalTombstoneResult=tombstoneEngine(equalTombstoneDb);
 assert(Array.isArray(equalTombstoneResult.tombstones),'Equal-time tombstone handling must remain deterministic');
 cases.push('equal-time tombstone pruning deterministic');
+
+assert(reconciliation.newerRecord&&reconciliation.mergeRecords,'Standalone module must expose merge helpers');
+const older={id:'merge-1',updated:'2026-01-01T00:00:00.000Z',value:'old'};
+const newer={id:'merge-1',updated:'2026-01-02T00:00:00.000Z',value:'new'};
+assert.strictEqual(reconciliation.newerRecord(older,newer),newer);
+assert.strictEqual(reconciliation.newerRecord(newer,older),newer);
+const merged=reconciliation.mergeRecords([{...older}],[{...newer},{id:'merge-2',updated:'2026-01-01T00:00:00.000Z'}]);
+assert.strictEqual(merged.length,2);
+assert.strictEqual(merged.find(x=>x.id==='merge-1').value,'new');
+cases.push('merge helpers → newer record wins and distinct records survive');
 console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-trigger, and per-record write invariants');
 const vm=require('vm');
 const cases=[];
