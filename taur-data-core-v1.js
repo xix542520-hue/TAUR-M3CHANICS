@@ -87,8 +87,20 @@
     const index = collection.findIndex(x => x && x.id === recordId);
     if(index < 0) return null;
     const removed = collection.splice(index,1)[0];
+    const tombstones = ensureCollection('tombstones');
+    const tombstoneId = name + ':' + recordId;
+    const existing = tombstones.find(x => x && x.id === tombstoneId);
+    const tombstone = {
+      id: tombstoneId,
+      collection: name,
+      recordId,
+      deletedAt: now()
+    };
+    if(existing) Object.assign(existing, tombstone);
+    else tombstones.push(tombstone);
     saveDb();
     emit(name.toUpperCase() + '_REMOVED', removed);
+    emit('TOMBSTONE_CREATED', tombstone);
     return removed;
   }
 
