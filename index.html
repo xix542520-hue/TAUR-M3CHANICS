@@ -244,11 +244,15 @@ render();
   const saveVehicleV2=(wrap,v,isNew)=>{
     const data={customerId:wrap.querySelector('#tv2owner').value,year:wrap.querySelector('#tv2year').value.trim(),make:wrap.querySelector('#tv2make').value.trim(),model:wrap.querySelector('#tv2model').value.trim(),mileage:wrap.querySelector('#tv2mileage').value.trim(),notes:wrap.querySelector('#tv2notes').value.trim()};
     if(isNew){
-      if(window.TAUR?.vehicles?.create) v=window.TAUR.vehicles.create(data);
-      else { v={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.vehicles.push(v);save(); }
+      const coreAvailable=typeof window.TAUR?.vehicles?.create==="function";
+      if(coreAvailable)v=window.TAUR.vehicles.create(data);
+      if(coreAvailable&&!v)return alert("Vehicle was rejected by the Data Core; nothing was recorded.");
+      if(!coreAvailable){v={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.vehicles.push(v);save();}
     } else {
-      if(window.TAUR?.vehicles?.update) window.TAUR.vehicles.update(v.id,data);
-      else { Object.assign(v,data);save(); }
+      const coreAvailable=typeof window.TAUR?.vehicles?.update==="function";
+      const updated=coreAvailable?window.TAUR.vehicles.update(v.id,data):null;
+      if(coreAvailable&&!updated)return alert("Vehicle update was rejected by the Data Core; nothing was changed.");
+      if(!coreAvailable){Object.assign(v,data,{updated:new Date().toISOString()});save();}
     }
     closeV2();render();
   };
