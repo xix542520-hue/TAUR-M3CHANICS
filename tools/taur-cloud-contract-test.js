@@ -27,6 +27,10 @@ assert(source.includes('window.taurCloudDiagnostics='),'Missing cloud diagnostic
 assert(source.includes('lastReconciliationPlan'),'Missing persisted reconciliation diagnostics');
 assert((source.match(/async function loadRemote\s*\(/g)||[]).length===1,'Cloud Sync must define exactly one loadRemote');
 assert((source.match(/function mergeRemoteRowsIntoLocal\s*\(/g)||[]).length===1,'Cloud Sync must define exactly one remote merge helper');
+assert(source.includes('function migrateLegacyGrowthToCore(db)'),'Legacy growth migration must be explicitly isolated');
+assert(source.includes("localStorage.removeItem('TAUR_GROWTH_V1')"),'Legacy growth storage must be retired after migration');
+assert(!source.includes("localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify"),'Cloud Sync must not maintain TAUR_GROWTH_V1 as a live mirror');
+
 assert(!source.includes('const compareRecordState='),'Cloud Sync must not reimplement compareRecordState');
 assert(!source.includes('const buildReconciliationPlan='),'Cloud Sync must not reimplement buildReconciliationPlan');
 assert(source.includes('TAUR_CLOUD_RECONCILIATION.compareRecordState'),'Cloud Sync must delegate comparison');
