@@ -128,7 +128,7 @@
     const dependents = (linked[name]||[]).flatMap(child =>
       ensureCollection(child).filter(x => x && (
         (name==='customers' && x.customerId===recordId) ||
-        (name==='vehicles' && (x.vehicleId===recordId || x.customerId===recordId && child==='referrals')) ||
+        (name==='vehicles' && x.vehicleId===recordId) ||
         (name==='jobs' && x.jobId===recordId) ||
         (name==='partners' && x.partnerId===recordId)
       )).map(x=>({collection:child,id:x.id}))
