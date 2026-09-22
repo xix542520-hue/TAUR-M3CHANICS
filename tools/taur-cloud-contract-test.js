@@ -74,10 +74,10 @@ console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-tri
 const vm=require('vm');
 const cases=[];
 const check=(name,fn)=>{fn();cases.push(name)};
-const sandbox={window:{},console,localStorage:{getItem:()=>null,setItem:()=>{}},document:{},Math,Date,JSON,setTimeout,clearTimeout};
+const sandbox={globalThis:{},console,Math,Date,JSON};
 vm.createContext(sandbox);
 vm.runInContext(reconciliationSource,sandbox);
-const reconciliation=sandbox.window.TAUR_CLOUD_RECONCILIATION;
+const reconciliation=sandbox.globalThis.TAUR_CLOUD_RECONCILIATION;
 assert(reconciliation,'Standalone reconciliation module must expose TAUR_CLOUD_RECONCILIATION');
 
 assert(reconciliation,'Reconciliation API must be exposed');
