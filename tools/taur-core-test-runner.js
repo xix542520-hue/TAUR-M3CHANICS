@@ -102,6 +102,8 @@ const txTagged=txEvents.filter(e=>e.transactionId);
 assert(txTagged.length>=2,'Transaction child events should be tagged');
 assert(new Set(txTagged.map(e=>e.transactionId)).size===1,'Transaction events should share one ID');
 assert(txTagged.some(e=>e.type==='TRANSACTION_COMMITTED'),'Commit event should be tagged');
+assert(txEvents[txEvents.length-1]?.type==='TRANSACTION_COMMITTED','Commit event should be the final event in a successful transaction');
+assert(txEvents[txEvents.length-1]?.transactionId===txTagged[0]?.transactionId,'Final commit event should retain the transaction ID');
 
 const rollbackStart=sandbox.window.TAUR.events.history().length;
 assert(sandbox.window.TAUR.transaction(()=>{
