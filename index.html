@@ -28,11 +28,15 @@ const parseLocal=(k,fallback=null)=>{try{const raw=localStorage.getItem(k);retur
 let db=parseLocal(KEY)||parseLocal("TAUR_M3CHANICS_v5")||parseLocal("TAUR_M3CHANICS_v4")||JSON.parse(JSON.stringify(defaults));
 window.taurSetDb=next=>{if(next&&typeof next==="object")db=next};
 Object.keys(defaults).forEach(k=>{if(db[k]===undefined)db[k]=Array.isArray(defaults[k])?[]:defaults[k]});
+function taurBootMigrate(){
 db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=j.status||"OPEN";j.total=Number(j.total||0);j.warranty=j.warranty||"";j.approval=j.approval||{status:"NOT REQUESTED",at:"",method:"",note:""};j.updated=j.updated||j.created||new Date().toISOString();j.type=j.type||"MECHANICS";j.serviceFamily=j.serviceFamily||"";j.condition=j.condition||"";j.vehicleSize=j.vehicleSize||"";j.addOns=j.addOns||[];j.leadSource=j.leadSource||"";j.laborHours=Number(j.laborHours||0);j.travelMinutes=Number(j.travelMinutes||0);j.materialsCost=Number(j.materialsCost||0);j.followUpDate=j.followUpDate||""});
 db.customers.forEach(c=>{c.logRouting=c.logRouting||"BOTH"});
 db.quotes.forEach(q=>{q.status=q.status||"DRAFT";q.total=Number(q.total||0)});
 db.payments.forEach(x=>{x.amount=Number(x.amount||0)});
 if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(db));
+  window.taurBootMigration={version:1,ranAt:new Date().toISOString()};
+}
+taurBootMigrate();
 const stages=["INTAKE","DIAGNOSE","ESTIMATE","APPROVED","REPAIR","VERIFY","COMPLETE"];
 const statuses=["OPEN","IN PROGRESS","WAITING","COMPLETE","CANCELLED"];
 const serviceFamilies=["A — MAINTENANCE","B — RESTORATION","C — SPECIALTY / ADD-ONS"];
@@ -214,11 +218,15 @@ render();
     if(!name)return alert('Customer name is required.');
     const data={name,phone:wrap.querySelector('#tv2phone').value.trim(),email:wrap.querySelector('#tv2email').value.trim(),logRouting:wrap.querySelector('#tv2route').value,notes:wrap.querySelector('#tv2notes').value.trim()};
     if(isNew){
-      if(window.TAUR?.customers?.create) c=window.TAUR.customers.create(data);
-      else { c={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.customers.push(c);save(); }
+      const coreAvailable=typeof window.TAUR?.customers?.create==="function";
+      if(coreAvailable)c=window.TAUR.customers.create(data);
+      if(coreAvailable&&!c)return alert("Customer was rejected by the Data Core; nothing was recorded.");
+      if(!coreAvailable){c={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.customers.push(c);save();}
     } else {
-      if(window.TAUR?.customers?.update) window.TAUR.customers.update(c.id,data);
-      else { Object.assign(c,data);save(); }
+      const coreAvailable=typeof window.TAUR?.customers?.update==="function";
+      const updated=coreAvailable?window.TAUR.customers.update(c.id,data):null;
+      if(coreAvailable&&!updated)return alert("Customer update was rejected by the Data Core; nothing was changed.");
+      if(!coreAvailable){Object.assign(c,data,{updated:new Date().toISOString()});save();}
     }
     closeV2();render();
   };
