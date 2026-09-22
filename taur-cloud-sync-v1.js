@@ -47,7 +47,16 @@
      else merged[row.collection]=row.payload;
    }
    const tombstones=Array.isArray(merged.tombstones)?merged.tombstones:[];
-   for(const t of tombstones){if(!t?.collection||!t?.recordId)continue;if(Array.isArray(merged[t.collection]))merged[t.collection]=merged[t.collection].filter(x=>x?.id!==t.recordId)}
+   for(const t of tombstones){
+     if(!t?.collection||!t?.recordId)continue;
+     if(!Array.isArray(merged[t.collection]))continue;
+     const deletedAt=Date.parse(t.deletedAt||0)||0;
+     merged[t.collection]=merged[t.collection].filter(x=>{
+       if(x?.id!==t.recordId)return true;
+       const updatedAt=Date.parse(x.updated||x.created||0)||0;
+       return updatedAt>deletedAt;
+     });
+   }
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
    for(const collection of COLLECTIONS){const payload=(merged[collection]??(collection==='settings'?{}:[]));const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});if(error)throw error}
    remoteReady=true;statusBar(true,'SYNCED');return true;
