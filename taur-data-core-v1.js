@@ -14,6 +14,8 @@
     return null;
   }
   const listeners = {};
+  const eventHistory = [];
+  const EVENT_HISTORY_LIMIT = 250;
   let transactionActive = false;
   let transactionEvents = [];
 
@@ -22,11 +24,16 @@
   const id = () => (typeof uid === 'function' ? uid() :
     Date.now().toString(36) + Math.random().toString(36).slice(2,8));
 
+  function recordEvent(type, detail){
+    eventHistory.push({type,detail:detail||null,at:now()});
+    if(eventHistory.length>EVENT_HISTORY_LIMIT) eventHistory.splice(0,eventHistory.length-EVENT_HISTORY_LIMIT);
+  }
   function emit(type, detail){
     if(transactionActive){
       transactionEvents.push({type,detail});
       return;
     }
+    recordEvent(type,detail);
     (listeners[type] || []).slice().forEach(fn => {
       try { fn(detail); } catch (err) { console.error('[TAUR DATA]', err); }
     });
@@ -306,6 +313,11 @@
     errors: () => root.errors.slice(),
     lastError: () => root.errors.length ? root.errors[root.errors.length - 1] : null,
     clearErrors: () => { root.errors.length = 0; return true; }
+  };
+  root.events = {
+    history: () => eventHistory.slice(),
+    recent: limit => eventHistory.slice(-(Math.max(1,Number(limit)||25))),
+    clear: () => { eventHistory.length = 0; return true; }
   };
 
   root.commit = function(){
