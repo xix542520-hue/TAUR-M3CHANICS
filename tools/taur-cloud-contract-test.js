@@ -50,6 +50,7 @@ cases.push('older recreation removed by newer tombstone');
 const recreation={customers:[{id:'cust-1',updated:'2026-01-03T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 const recreationResult=tombstoneEngine(recreation);
 assert.strictEqual(recreationResult.customers.length,1);
+assert.strictEqual(recreationResult.tombstones.length,0);
 cases.push('newer recreation survives older tombstone');
 console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-trigger, and per-record write invariants');
 const vm=require('vm');
