@@ -32,10 +32,8 @@ let lastReconciliationPlan=null;
     rows.filter(r=>r?.id).forEach(record=>{
       const id=String(record.id), remote=remoteMap.get(id);
       if(!remote){actions.create++;return}
-      const localTime=Date.parse(record.updated||record.created||0)||0;
-      const remoteTime=Date.parse(remote.updated_at||remote.payload?.updated||remote.payload?.created||0)||0;
-      if(JSON.stringify(remote.payload||{})===JSON.stringify(record))actions.keep++;
-      else if(localTime>=remoteTime)actions.update++;
+      const decision=compareRecordState(record,remote);
+      if(decision==='UPDATE')actions.update++;
       else actions.keep++;
     });
     const staleIds=[...remoteMap.keys()].filter(id=>!rows.some(r=>r?.id&&String(r.id)===id));
@@ -48,6 +46,16 @@ let lastReconciliationPlan=null;
     plan.totals.create+=actions.create; plan.totals.update+=actions.update; plan.totals.keep+=actions.keep; plan.totals.delete+=actions.delete;
   }
   return plan;
+ };
+ const compareRecordState=(localRecord,remoteRow)=>{
+  const localPayload=localRecord||{}, remotePayload=remoteRow?.payload||{};
+  if(JSON.stringify(localPayload)===JSON.stringify(remotePayload))return 'KEEP';
+  const lt=Date.parse(localPayload.updated||localPayload.created||0)||0;
+  const rt=Date.parse(remoteRow?.updated_at||remotePayload.updated||remotePayload.created||0)||0;
+  if(lt>rt)return 'UPDATE';
+  if(rt>lt)return 'KEEP';
+  const ls=JSON.stringify(localPayload), rs=JSON.stringify(remotePayload);
+  return ls>=rs?'UPDATE':'KEEP';
  };
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
@@ -115,9 +123,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
        const id=String(record.id);
        if(!remoteById.has(id))return true;
        const remote=remoteById.get(id);
-       const localTime=Date.parse(record.updated||record.created||0)||0;
-       const remoteTime=Date.parse(remote.updated_at||remote.payload?.updated||remote.payload?.created||0)||0;
-       return JSON.stringify(remote.payload||{})!==JSON.stringify(record) && localTime>=remoteTime;
+       return compareRecordState(record,remote)==='UPDATE';
      }).map(record=>({
        business_id:businessId,
        collection,
