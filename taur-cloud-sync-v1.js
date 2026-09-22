@@ -3,7 +3,7 @@
  const SUPABASE_URL='https://pgvicmzjrrqimwftftuj.supabase.co',SUPABASE_KEY='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h',KEY='TAUR_M3CHANICS_FINAL_V1';
  const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','leads','estimates','partners','referrals','tombstones'];
  const LEGACY_GROWTH_COLLECTIONS=['growth_leads','growth_estimates'];
- let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null;
+ let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null,coreSyncTimer=null,coreSyncBound=false;
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const legacyLocalDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
  const localDb=()=>window.TAUR?.data?window.TAUR.data.db:legacyLocalDb();
@@ -13,9 +13,20 @@
  const applyTombstones=db=>{const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];for(const t of tombstones){if(!t?.collection||!t?.recordId)continue;if(!Array.isArray(db[t.collection]))continue;const deletedAt=Date.parse(t.deletedAt||0)||0;db[t.collection]=db[t.collection].filter(x=>{if(x?.id!==t.recordId)return true;const updatedAt=Date.parse(x.updated||x.created||0)||0;return updatedAt>deletedAt})}db.tombstones=tombstones.filter(t=>{const record=Array.isArray(db[t?.collection])?db[t.collection].find(x=>x?.id===t.recordId):null;if(!record)return true;const deletedAt=Date.parse(t.deletedAt||0)||0;const updatedAt=Date.parse(record.updated||record.created||0)||0;return updatedAt<=deletedAt});return db};
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
- async function init(){try{await loadSdk();client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const {data:{session}}=await client.auth.getSession();if(session)await signedIn(session);else statusBar(false);client.auth.onAuthStateChange((event,session)=>setTimeout(()=>session?signedIn(session):statusBar(false),0));window.taurCloud={open:openPanel,signOut,sync:syncNow,migrate:migrateLocal,invite};}catch(e){console.error(e);toast('Cloud initialization failed')}}
+ function scheduleCoreSync(){
+  if(!remoteReady||loadingRemote||!client||!businessId)return;
+  clearTimeout(coreSyncTimer);
+  coreSyncTimer=setTimeout(()=>{syncNow()},350);
+}
+function bindCoreSync(){
+  if(coreSyncBound||!window.TAUR?.on)return;
+  window.TAUR.on('DATA_SAVED',scheduleCoreSync);
+  window.TAUR.on('TRANSACTION_COMMITTED',scheduleCoreSync);
+  coreSyncBound=true;
+}
+async function init(){try{await loadSdk();client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const {data:{session}}=await client.auth.getSession();if(session)await signedIn(session);else statusBar(false);client.auth.onAuthStateChange((event,session)=>setTimeout(()=>session?signedIn(session):statusBar(false),0));window.taurCloud={open:openPanel,signOut,sync:syncNow,migrate:migrateLocal,invite};}catch(e){console.error(e);toast('Cloud initialization failed')}}
  function statusBar(on,state){let h=document.getElementById('taurCloudHeader');if(!h){h=document.createElement('div');h.id='taurCloudHeader';h.style.cssText='position:fixed;right:10px;top:76px;z-index:40;font-size:9px;font-weight:900;letter-spacing:1px;background:#171717;border:1px solid #333;border-radius:20px;padding:6px 9px;color:#aaa;cursor:pointer';document.body.appendChild(h);h.onclick=openPanel}h.textContent=on?('☁ '+(state||'SYNCED')):'☁ SIGN IN';h.style.color=on?'#bfe6bf':'#ddd'}
- async function signedIn(session){remoteReady=false;try{const {data,error}=await client.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(error)throw error;businessId=data;localStorage.setItem('TAUR_BUSINESS_ID',businessId);await loadRemote();subscribe();remoteReady=true;await syncNow();statusBar(true);toast('TAUR CLOUD connected',true)}catch(e){console.error(e);toast('Cloud connection error: '+(e.message||e))}}
+ async function signedIn(session){remoteReady=false;try{const {data,error}=await client.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(error)throw error;businessId=data;localStorage.setItem('TAUR_BUSINESS_ID',businessId);await loadRemote();subscribe();remoteReady=true;bindCoreSync();await syncNow();statusBar(true);toast('TAUR CLOUD connected',true)}catch(e){console.error(e);toast('Cloud connection error: '+(e.message||e))}}
  async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
  const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
  
