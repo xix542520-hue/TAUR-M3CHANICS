@@ -10,4 +10,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm test
+      - name: Data Core tests
+        run: node tools/taur-core-test-runner.js
+      - name: Cloud reconciliation tests
+        run: node tools/taur-cloud-reconciliation-test.js
+      - name: Cloud contract tests
+        run: node tools/taur-cloud-contract-test.js
