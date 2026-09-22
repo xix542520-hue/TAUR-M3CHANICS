@@ -11,6 +11,32 @@
  const newerRecord=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;return tb>ta?b:a};
  const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const applyTombstones=db=>{const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];for(const t of tombstones){if(!t?.collection||!t?.recordId)continue;if(!Array.isArray(db[t.collection]))continue;const deletedAt=Date.parse(t.deletedAt||0)||0;db[t.collection]=db[t.collection].filter(x=>{if(x?.id!==t.recordId)return true;const updatedAt=Date.parse(x.updated||x.created||0)||0;return updatedAt>deletedAt})}db.tombstones=tombstones.filter(t=>{const record=Array.isArray(db[t?.collection])?db[t.collection].find(x=>x?.id===t.recordId):null;if(!record)return true;const deletedAt=Date.parse(t.deletedAt||0)||0;const updatedAt=Date.parse(record.updated||record.created||0)||0;return updatedAt<=deletedAt});return db};
+ const buildReconciliationPlan=(local,remoteRows)=>{
+  const plan={collections:{},totals:{upserts:0,staleDeletes:0,legacyDeletes:0}};
+  const remoteByCollection={};
+  for(const row of remoteRows||[]){
+    if(!COLLECTIONS.includes(row.collection))continue;
+    (remoteByCollection[row.collection]||(remoteByCollection[row.collection]=[])).push(String(row.record_id));
+  }
+  for(const collection of COLLECTIONS){
+    if(collection==='settings'){
+      plan.collections[collection]={upserts:1,staleDeletes:0,legacyDeletes:(remoteByCollection[collection]||[]).includes(collection)?1:0};
+      plan.totals.upserts+=1;
+      plan.totals.legacyDeletes+=plan.collections[collection].legacyDeletes;
+      continue;
+    }
+    const rows=Array.isArray(local?.[collection])?local[collection]:[];
+    const localIds=new Set(rows.filter(r=>r?.id).map(r=>String(r.id)));
+    const remoteIds=remoteByCollection[collection]||[];
+    const staleDeletes=remoteIds.filter(id=>id!==collection&&!localIds.has(id)).length;
+    const legacyDeletes=remoteIds.includes(collection)?1:0;
+    plan.collections[collection]={upserts:localIds.size,staleDeletes,legacyDeletes};
+    plan.totals.upserts+=localIds.size;
+    plan.totals.staleDeletes+=staleDeletes;
+    plan.totals.legacyDeletes+=legacyDeletes;
+  }
+  return plan;
+ };
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  function scheduleCoreSync(){
@@ -45,7 +71,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
  applyTombstones(db);
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
-   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
+   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   const reconciliationPlan=buildReconciliationPlan(local,remoteRows);
    if(remoteError)throw remoteError;
    const merged={...local};
    for(const row of remoteRows||[]){
