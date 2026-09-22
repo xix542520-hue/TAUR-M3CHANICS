@@ -1,5 +1,6 @@
 const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('taur-cloud-sync-v1.js','utf8');
+const reconciliationSource=fs.readFileSync('taur-cloud-reconciliation-v1.js','utf8');
 const required=[
   'legacyGrowth[k]=mergeRecords',
   'applyTombstones(merged)',
@@ -39,8 +40,10 @@ console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-tri
 const vm=require('vm');
 const sandbox={window:{},console,localStorage:{getItem:()=>null,setItem:()=>{}},document:{},Math,Date,JSON,setTimeout,clearTimeout};
 vm.createContext(sandbox);
-vm.runInContext(source,sandbox);
-const reconciliation=sandbox.window.taurCloudReconciliation;
+vm.runInContext(reconciliationSource,sandbox);
+const reconciliation=sandbox.window.TAUR_CLOUD_RECONCILIATION;
+assert(reconciliation,'Standalone reconciliation module must expose TAUR_CLOUD_RECONCILIATION');
+
 assert(reconciliation,'Reconciliation API must be exposed');
 const same={id:'x',updated:'2026-01-02T00:00:00.000Z',value:1};
 assert.strictEqual(reconciliation.compareRecordState(same,{payload:{...same},updated_at:same.updated}),'KEEP');
