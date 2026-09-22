@@ -209,9 +209,14 @@ render();
     const name=wrap.querySelector('#tv2name').value.trim();
     if(!name)return alert('Customer name is required.');
     const data={name,phone:wrap.querySelector('#tv2phone').value.trim(),email:wrap.querySelector('#tv2email').value.trim(),logRouting:wrap.querySelector('#tv2route').value,notes:wrap.querySelector('#tv2notes').value.trim()};
-    if(isNew){const x={id:uid(),created:new Date().toISOString(),...data};db.customers.push(x)}
-    else Object.assign(c,data);
-    save();closeV2();render();
+    if(isNew){
+      if(window.TAUR?.customers?.create) c=window.TAUR.customers.create(data);
+      else { c={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.customers.push(c);save(); }
+    } else {
+      if(window.TAUR?.customers?.update) window.TAUR.customers.update(c.id,data);
+      else { Object.assign(c,data);save(); }
+    }
+    closeV2();render();
   };
   window.newCustomer=()=>openV2('NEW CUSTOMER',customerBody(null),w=>saveCustomerV2(w,null,true));
   window.editCustomer=id=>{const c=C(id);if(!c)return;openV2('EDIT CUSTOMER',customerBody(c),w=>saveCustomerV2(w,c,false));};
@@ -226,8 +231,14 @@ render();
   </div>`;
   const saveVehicleV2=(wrap,v,isNew)=>{
     const data={customerId:wrap.querySelector('#tv2owner').value,year:wrap.querySelector('#tv2year').value.trim(),make:wrap.querySelector('#tv2make').value.trim(),model:wrap.querySelector('#tv2model').value.trim(),mileage:wrap.querySelector('#tv2mileage').value.trim(),notes:wrap.querySelector('#tv2notes').value.trim()};
-    if(isNew)db.vehicles.push({id:uid(),created:new Date().toISOString(),...data});else Object.assign(v,data);
-    save();closeV2();render();
+    if(isNew){
+      if(window.TAUR?.vehicles?.create) v=window.TAUR.vehicles.create(data);
+      else { v={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.vehicles.push(v);save(); }
+    } else {
+      if(window.TAUR?.vehicles?.update) window.TAUR.vehicles.update(v.id,data);
+      else { Object.assign(v,data);save(); }
+    }
+    closeV2();render();
   };
   window.newVehicle=()=>openV2('NEW VEHICLE',vehicleBody(null),w=>saveVehicleV2(w,null,true));
   window.editVehicle=id=>{const v=V(id);if(!v)return;openV2('EDIT VEHICLE',vehicleBody(v),w=>saveVehicleV2(w,v,false));};
