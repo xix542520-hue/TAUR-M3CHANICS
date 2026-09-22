@@ -59,6 +59,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    }
    applyTombstones(merged);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
+   const staleByCollection={};
    for(const collection of COLLECTIONS){
      if(collection==='settings'){
        const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload:(merged.settings||{}),updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});
@@ -81,10 +82,13 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      }
      const remoteIds=(remoteRows||[]).filter(row=>row.collection===collection).map(row=>String(row.record_id));
      const staleIds=remoteIds.filter(id=>id!==collection&&!localIds.has(id));
-     if(staleIds.length){
-       const {error:staleDeleteError}=await client.from('app_records').delete().eq('business_id',businessId).eq('collection',collection).in('record_id',staleIds);
-       if(staleDeleteError)throw staleDeleteError;
-     }
+     if(staleIds.length)staleByCollection[collection]=staleIds;
+   }
+   for(const [collection,ids] of Object.entries(staleByCollection)){
+     const {error:staleDeleteError}=await client.from('app_records').delete().eq('business_id',businessId).eq('collection',collection).in('record_id',ids);
+     if(staleDeleteError)throw staleDeleteError;
+   }
+   for(const collection of COLLECTIONS){
      const {error:legacyDeleteError}=await client.from('app_records').delete().eq('business_id',businessId).eq('collection',collection).eq('record_id',collection);
      if(legacyDeleteError)throw legacyDeleteError;
    }
