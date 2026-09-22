@@ -32,6 +32,7 @@ const duplicatePlan=reconciliation.buildReconciliationPlan(
   {collection:'unknown',record_id:'ghost',payload:{id:'ghost'},updated_at:'2026-01-01T00:00:00.000Z'}
  ]);
 check('planner duplicate remote IDs collapse deterministically',()=>{assert.strictEqual(duplicatePlan.collections.customers.actions.update,0);assert.strictEqual(duplicatePlan.collections.customers.actions.keep,1);assert.strictEqual(duplicatePlan.totals.delete,0)});
+check('planner exposes exact action IDs',()=>{const ids=duplicatePlan.collections.customers.ids;assert.deepStrictEqual(ids.create,[]);assert.deepStrictEqual(ids.update,[]);assert.deepStrictEqual(ids.keep,['dup']);assert.deepStrictEqual(ids.delete,[])});
 check('planner ignores unknown collections',()=>assert.strictEqual(duplicatePlan.totals.delete,0));
 
 
