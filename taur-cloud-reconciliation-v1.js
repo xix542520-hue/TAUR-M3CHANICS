@@ -46,7 +46,10 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
    if(!record)return true;
    const deletedAt=Date.parse(t.deletedAt||0)||0;
    const updatedAt=Date.parse(record.updated||record.created||0)||0;
-   return updatedAt<=deletedAt;
+   if(updatedAt>deletedAt)return false;
+   if(updatedAt<deletedAt)return true;
+   const recordKey=JSON.stringify(record),tombstoneKey=JSON.stringify(t);
+   return recordKey<tombstoneKey;
   });
   return next;
  };
