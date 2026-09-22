@@ -1,5 +1,15 @@
 const TAUR_CLOUD_RECONCILIATION=(function(){
- const compareRecordState=TAUR_CLOUD_RECONCILIATION.compareRecordState;
+ const compareRecordState=(localRecord,remoteRow)=>{
+  const localPayload=localRecord||{},remotePayload=remoteRow?.payload||{};
+  if(JSON.stringify(localPayload)===JSON.stringify(remotePayload))return 'KEEP';
+  const lt=Date.parse(localPayload.updated||localPayload.created||0)||0;
+  const rt=Date.parse(remoteRow?.updated_at||remotePayload.updated||remotePayload.created||0)||0;
+  if(lt>rt)return 'UPDATE';
+  if(rt>lt)return 'KEEP';
+  const ls=JSON.stringify(localPayload),rs=JSON.stringify(remotePayload);
+  return ls>=rs?'UPDATE':'KEEP';
+ };
+
  const buildReconciliationPlan=(local,remoteRows,collections)=>{
   const cols=Array.isArray(collections)?collections:['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','leads','estimates','partners','referrals','tombstones'];
   const plan={collections:{},totals:{upserts:0,staleDeletes:0,legacyDeletes:0,create:0,update:0,keep:0,delete:0}},remoteByCollection={};
