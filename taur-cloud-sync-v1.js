@@ -13,17 +13,8 @@ let lastReconciliationPlan=null;
  const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const applyTombstones=db=>{const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];for(const t of tombstones){if(!t?.collection||!t?.recordId)continue;if(!Array.isArray(db[t.collection]))continue;const deletedAt=Date.parse(t.deletedAt||0)||0;db[t.collection]=db[t.collection].filter(x=>{if(x?.id!==t.recordId)return true;const updatedAt=Date.parse(x.updated||x.created||0)||0;return updatedAt>deletedAt})}db.tombstones=tombstones.filter(t=>{const record=Array.isArray(db[t?.collection])?db[t.collection].find(x=>x?.id===t.recordId):null;if(!record)return true;const deletedAt=Date.parse(t.deletedAt||0)||0;const updatedAt=Date.parse(record.updated||record.created||0)||0;return updatedAt<=deletedAt});return db};
  const buildReconciliationPlan=(local,remoteRows)=>TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(local,remoteRows,COLLECTIONS);
- const compareRecordState=(localRecord,remoteRow)=>{
-  const localPayload=localRecord||{}, remotePayload=remoteRow?.payload||{};
-  if(JSON.stringify(localPayload)===JSON.stringify(remotePayload))return 'KEEP';
-  const lt=Date.parse(localPayload.updated||localPayload.created||0)||0;
-  const rt=Date.parse(remoteRow?.updated_at||remotePayload.updated||remotePayload.created||0)||0;
-  if(lt>rt)return 'UPDATE';
-  if(rt>lt)return 'KEEP';
-  const ls=JSON.stringify(localPayload), rs=JSON.stringify(remotePayload);
-  return ls>=rs?'UPDATE':'KEEP';
- };
- window.taurCloudReconciliation={compareRecordState,buildReconciliationPlan};
+ const compareRecordState=TAUR_CLOUD_RECONCILIATION.compareRecordState;
+ const buildReconciliationPlan=(local,remoteRows)=>TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(local,remoteRows,COLLECTIONS);
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  function scheduleCoreSync(){
