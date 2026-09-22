@@ -29,6 +29,20 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
    plan.totals.create+=actions.create;plan.totals.update+=actions.update;plan.totals.keep+=actions.keep;plan.totals.delete+=actions.delete;
   } return plan;
  };
- return {compareRecordState,buildReconciliationPlan};
+ const applyTombstones=(db)=>{
+  const tombstones=Array.isArray(db?.tombstones)?db.tombstones:[];
+  const next={...db};
+  for(const t of tombstones){
+   if(!t?.collection||!t?.recordId||!Array.isArray(next[t.collection]))continue;
+   const deletedAt=Date.parse(t.deletedAt||0)||0;
+   next[t.collection]=next[t.collection].filter(record=>{
+    if(String(record?.id)!==String(t.recordId))return true;
+    const updatedAt=Date.parse(record.updated||record.created||0)||0;
+    return updatedAt>deletedAt;
+   });
+  }
+  return next;
+ };
+ return {compareRecordState,buildReconciliationPlan,applyTombstones};
 })();
 window.TAUR_CLOUD_RECONCILIATION=TAUR_CLOUD_RECONCILIATION;
