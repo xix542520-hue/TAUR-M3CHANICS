@@ -28,8 +28,20 @@ check('planner DELETE count',()=>assert.strictEqual(plan.collections.customers.a
 const older={id:'merge-1',updated:'2026-01-01T00:00:00.000Z',value:'old'};
 const newer={id:'merge-1',updated:'2026-01-02T00:00:00.000Z',value:'new'};
 check('newerRecord → newer wins',()=>assert.strictEqual(reconciliation.newerRecord(older,newer),newer));
+check('newerRecord is non-mutating',()=>{
+  const a=JSON.parse(JSON.stringify(older)),b=JSON.parse(JSON.stringify(newer));
+  reconciliation.newerRecord(a,b);
+  assert.deepStrictEqual(a,older);assert.deepStrictEqual(b,newer);
+});
+
 const merged=reconciliation.mergeRecords([older],[newer,{id:'merge-2',updated:'2026-01-01T00:00:00.000Z'}]);
 check('mergeRecords → duplicates resolve and distinct records survive',()=>{assert.strictEqual(merged.length,2);assert.strictEqual(merged.find(x=>x.id==='merge-1').value,'new')});
+check('mergeRecords is non-mutating',()=>{
+  const left=[JSON.parse(JSON.stringify(older))],right=[JSON.parse(JSON.stringify(newer)),{id:'merge-2',updated:'2026-01-01T00:00:00.000Z'}];
+  reconciliation.mergeRecords(left,right);
+  assert.deepStrictEqual(left,[older]);assert.deepStrictEqual(right,[newer,{id:'merge-2',updated:'2026-01-01T00:00:00.000Z'}]);
+});
+
 
 const stale={customers:[{id:'cust-1',updated:'2026-01-01T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 check('newer tombstone removes stale record',()=>assert.strictEqual(reconciliation.applyTombstones(stale).customers.length,0));
