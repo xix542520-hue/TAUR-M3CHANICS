@@ -377,12 +377,32 @@
         assert('transaction events suppressed on rollback', transactionEventCount===beforeTxEvents);
         offTransactionTest();
         assert('transaction rollback', rollbackResult === null && !customers.list().some(x=>x.name==='__TAUR_ROLLBACK__'));
+        let savedEvents = 0, committedEvents = 0;
+        const offSavedTest = on('DATA_SAVED', () => savedEvents++);
+        const offCommittedTest = on('TRANSACTION_COMMITTED', () => committedEvents++);
+        const savedBeforeCommit = savedEvents, committedBeforeCommit = committedEvents;
         const commitResult = transaction(()=>{
           const temp = customers.create({name:'__TAUR_COMMIT__'});
           assert('transaction commit create', !!temp);
           return temp;
         });
         assert('transaction commit', !!commitResult && !!customers.get(commitResult.id));
+        assert('commit persists once', savedEvents===savedBeforeCommit+1);
+        assert('commit emits once', committedEvents===committedBeforeCommit+1);
+        const savedBeforeRollback = savedEvents, committedBeforeRollback = committedEvents;
+        const rollbackEventResult = transaction(()=>{
+          customers.create({name:'__TAUR_ROLLBACK_EVENTS__'});
+          return false;
+        });
+        assert('rollback has no save event', savedEvents===savedBeforeRollback);
+        assert('rollback has no commit event', committedEvents===committedBeforeRollback);
+        assert('rollback removes created record', !customers.list().some(x=>x.name==='__TAUR_ROLLBACK_EVENTS__'));
+        const thrownRollback = transaction(()=>{
+          customers.create({name:'__TAUR_THROW_ROLLBACK__'});
+          throw new Error('forced rollback');
+        });
+        assert('thrown transaction rolls back', thrownRollback===null && !customers.list().some(x=>x.name==='__TAUR_THROW_ROLLBACK__'));
+        offSavedTest(); offCommittedTest();
         customers.remove(commitResult.id);
         const partner = partners.create({name:'__TAUR_TEST_PARTNER__'});
         assert('partner create', !!partner);
