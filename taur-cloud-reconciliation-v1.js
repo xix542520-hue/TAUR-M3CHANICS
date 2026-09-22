@@ -1,14 +1,24 @@
 const TAUR_CLOUD_RECONCILIATION=(function(){
- const newerRecord=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;return tb>ta?b:a};
+ const stableStringify=(value)=>{
+  if(value===null||typeof value!=='object')return JSON.stringify(value);
+  if(Array.isArray(value))return '['+value.map(stableStringify).join(',')+']';
+  return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+stableStringify(value[k])).join(',')+'}';
+ };
+ const newerRecord=(a,b)=>{
+  const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;
+  if(tb>ta)return b;if(ta>tb)return a;
+  const as=stableStringify(a),bs=stableStringify(b);
+  return bs>as?b:a;
+ };
  const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const compareRecordState=(localRecord,remoteRow)=>{
   const localPayload=localRecord||{},remotePayload=remoteRow?.payload||{};
-  if(JSON.stringify(localPayload)===JSON.stringify(remotePayload))return 'KEEP';
+  if(stableStringify(localPayload)===stableStringify(remotePayload))return 'KEEP';
   const lt=Date.parse(localPayload.updated||localPayload.created||0)||0;
   const rt=Date.parse(remoteRow?.updated_at||remotePayload.updated||remotePayload.created||0)||0;
   if(lt>rt)return 'UPDATE';
   if(rt>lt)return 'KEEP';
-  const ls=JSON.stringify(localPayload),rs=JSON.stringify(remotePayload);
+  const ls=stableStringify(localPayload),rs=stableStringify(remotePayload);
   return ls>=rs?'UPDATE':'KEEP';
  };
 
@@ -60,7 +70,7 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
    const updatedAt=Date.parse(record.updated||record.created||0)||0;
    if(updatedAt>deletedAt)return false;
    if(updatedAt<deletedAt)return true;
-   const recordKey=JSON.stringify(record),tombstoneKey=JSON.stringify(t);
+   const recordKey=stableStringify(record),tombstoneKey=stableStringify(t);
    return recordKey<tombstoneKey;
   });
   return next;
