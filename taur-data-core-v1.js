@@ -139,6 +139,22 @@
     remove: id => remove('quotes', id)
   };
 
+  const leads = {
+    get: id => find('leads', id),
+    list: () => ensureCollection('leads'),
+    create: data => create('leads', data),
+    update: (id, patch) => update('leads', id, patch),
+    remove: id => remove('leads', id)
+  };
+
+  const estimates = {
+    get: id => find('estimates', id),
+    list: () => ensureCollection('estimates'),
+    create: data => create('estimates', data),
+    update: (id, patch) => update('estimates', id, patch),
+    remove: id => remove('estimates', id)
+  };
+
   const payments = {
     get: id => find('payments', id),
     list: () => ensureCollection('payments'),
@@ -183,6 +199,8 @@
     jobs,
     quotes,
     payments,
+    leads,
+    estimates,
     refresh: () => currentDb()
   };
 
