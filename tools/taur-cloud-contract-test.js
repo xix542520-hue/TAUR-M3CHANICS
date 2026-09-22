@@ -6,7 +6,11 @@ const required=[
   'const mergeRecords=',
   'const applyTombstones=',
   'window.taurCloudTests={run:'
-];
+]  'function scheduleCoreSync()',
+  'if(!remoteReady||loadingRemote||!client||!businessId)return;',
+  "window.TAUR.on('DATA_SAVED',scheduleCoreSync)",
+  "window.TAUR.on('TRANSACTION_COMMITTED',scheduleCoreSync)",
+  'coreSyncTimer=setTimeout(()=>{syncNow()},350)',;
 for(const token of required) assert(source.includes(token),'Missing cloud sync contract: '+token);
 const testBlock=source.slice(source.indexOf('window.taurCloudTests={run:'),source.indexOf('};',source.indexOf('window.taurCloudTests={run:'))+2);
 assert(testBlock.includes('newer update wins'));
