@@ -42,6 +42,8 @@ assert(source.includes('TAUR_CLOUD_RECONCILIATION.compareRecordState'),'Cloud Sy
 assert(source.includes('TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan'),'Cloud Sync must delegate planning');
 console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-trigger, and per-record write invariants');
 const vm=require('vm');
+const cases=[];
+const check=(name,fn)=>{fn();cases.push(name)};
 const sandbox={window:{},console,localStorage:{getItem:()=>null,setItem:()=>{}},document:{},Math,Date,JSON,setTimeout,clearTimeout};
 vm.createContext(sandbox);
 vm.runInContext(reconciliationSource,sandbox);
@@ -50,13 +52,13 @@ assert(reconciliation,'Standalone reconciliation module must expose TAUR_CLOUD_R
 
 assert(reconciliation,'Reconciliation API must be exposed');
 const same={id:'x',updated:'2026-01-02T00:00:00.000Z',value:1};
-assert.strictEqual(reconciliation.compareRecordState(same,{payload:{...same},updated_at:same.updated}),'KEEP');
-assert.strictEqual(reconciliation.compareRecordState({...same,value:2,updated:'2026-01-03T00:00:00.000Z'},{payload:same,updated_at:same.updated}),'UPDATE');
-assert.strictEqual(reconciliation.compareRecordState(same,{payload:{...same,value:2},updated_at:'2026-01-03T00:00:00.000Z'}),'KEEP');
+check('identical records → KEEP',()=>assert.strictEqual(reconciliation.compareRecordState(same,{payload:{...same},updated_at:same.updated}),'KEEP'));
+check('local newer → UPDATE',()=>assert.strictEqual(reconciliation.compareRecordState({...same,value:2,updated:'2026-01-03T00:00:00.000Z'},{payload:same,updated_at:same.updated}),'UPDATE'));
+check('remote newer → KEEP',()=>assert.strictEqual(reconciliation.compareRecordState(same,{payload:{...same,value:2},updated_at:'2026-01-03T00:00:00.000Z'}),'KEEP'));
 const equalLocal={id:'x',updated:'2026-01-02T00:00:00.000Z',value:'a'};
 const equalRemote={payload:{id:'x',updated:'2026-01-02T00:00:00.000Z',value:'b'},updated_at:'2026-01-02T00:00:00.000Z'};
 const equalDecision=reconciliation.compareRecordState(equalLocal,equalRemote);
-assert(equalDecision==='UPDATE'||equalDecision==='KEEP','Equal timestamps must resolve deterministically');
+check('equal timestamps → deterministic',()=>assert(equalDecision==='UPDATE'||equalDecision==='KEEP','Equal timestamps must resolve deterministically'));
 const plan=reconciliation.buildReconciliationPlan(
  {customers:[{id:'new',updated:'2026-01-03T00:00:00.000Z'}]},
  [
@@ -64,7 +66,7 @@ const plan=reconciliation.buildReconciliationPlan(
   {collection:'customers',record_id:'new',payload:{id:'new',updated:'2026-01-02T00:00:00.000Z'},updated_at:'2026-01-02T00:00:00.000Z'}
  ]
 );
-assert.strictEqual(plan.collections.customers.actions.create,0);
-assert.strictEqual(plan.collections.customers.actions.update,1);
-assert.strictEqual(plan.collections.customers.actions.delete,1);
-console.log('PASS — Cloud reconciliation behavioral tests');
+check('planner CREATE count',()=>assert.strictEqual(plan.collections.customers.actions.create,0));
+check('planner UPDATE count',()=>assert.strictEqual(plan.collections.customers.actions.update,1));
+check('planner DELETE count',()=>assert.strictEqual(plan.collections.customers.actions.delete,1));
+console.log('PASS — Cloud reconciliation behavioral tests'); cases.forEach((name,i)=>console.log('  '+(i+1)+'. '+name));
