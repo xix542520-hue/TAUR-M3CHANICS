@@ -78,4 +78,8 @@ assert(sandbox.window.TAUR.jobs.create({customerId:relA.id,vehicleId:mismatchVeh
 assert(sandbox.window.TAUR.vehicles.update(relVehicle.id,{customerId:relB.id})===null,'Vehicle reassignment must reject linked cross-customer relationship');
 assert(sandbox.window.TAUR.customers.remove(relA.id)===null,'Customer deletion must be blocked by linked vehicle/job history');
 assert(sandbox.window.TAUR.vehicles.remove(relVehicle.id)===null,'Vehicle deletion must be blocked by linked job history');
+const idCustomer=sandbox.window.TAUR.customers.create({id:'__FIXED_ID__',name:'__ID_ONE__'});
+assert(idCustomer,'Fixed-ID record should be created');
+assert(sandbox.window.TAUR.customers.create({id:'__FIXED_ID__',name:'__ID_TWO__'})===null,'Duplicate canonical ID must be rejected');
+assert(sandbox.window.TAUR.customers.list().filter(x=>x.id==='__FIXED_ID__').length===1,'Duplicate ID rejection must preserve one canonical record');
 console.log('PASS — Data Core self-tests:',result.results.length);
