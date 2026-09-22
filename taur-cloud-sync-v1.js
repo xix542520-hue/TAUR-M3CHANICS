@@ -4,6 +4,7 @@
  const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','leads','estimates','partners','referrals','tombstones'];
  const LEGACY_GROWTH_COLLECTIONS=['growth_leads','growth_estimates'];
  let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null,coreSyncTimer=null,coreSyncBound=false;
+let lastReconciliationPlan=null;
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const legacyLocalDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
  const localDb=()=>window.TAUR?.data?window.TAUR.data.db:legacyLocalDb();
@@ -70,8 +71,9 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
  db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
  applyTombstones(db);
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
+ window.taurCloudDiagnostics=()=>({remoteReady,businessId:!!businessId,syncing,loadingRemote,lastReconciliationPlan:lastReconciliationPlan?JSON.parse(JSON.stringify(lastReconciliationPlan)):null});
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
-   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   const reconciliationPlan=buildReconciliationPlan(local,remoteRows);
+   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   const reconciliationPlan=buildReconciliationPlan(local,remoteRows); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
    if(remoteError)throw remoteError;
    const merged={...local};
    for(const row of remoteRows||[]){
