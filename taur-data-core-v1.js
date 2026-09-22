@@ -14,6 +14,8 @@
     return null;
   }
   const listeners = {};
+  let transactionActive = false;
+  let transactionEvents = [];
 
   const now = () => new Date().toISOString();
   const asArray = value => Array.isArray(value) ? value : [];
@@ -21,6 +23,10 @@
     Date.now().toString(36) + Math.random().toString(36).slice(2,8));
 
   function emit(type, detail){
+    if(transactionActive){
+      transactionEvents.push({type,detail});
+      return;
+    }
     (listeners[type] || []).slice().forEach(fn => {
       try { fn(detail); } catch (err) { console.error('[TAUR DATA]', err); }
     });
@@ -54,9 +60,16 @@
   }
 
   function saveDb(){
+    if(transactionActive) return db;
     if(typeof save === 'function') save();
     emit('DATA_SAVED', {at: now()});
     return db;
+  }
+
+  function flushTransactionEvents(){
+    const events = transactionEvents.slice();
+    transactionEvents = [];
+    events.forEach(e => emit(e.type,e.detail));
   }
 
   function validateRelationships(name, data, recordId){
@@ -293,25 +306,36 @@
 
   root.transaction = function(work){
     if(typeof work !== 'function') return validationError('INVALID_TRANSACTION','Transaction callback must be a function');
+    if(transactionActive) return validationError('NESTED_TRANSACTION','Nested transactions are not supported');
     const snapshot = JSON.stringify(db);
+    const previousEvents = transactionEvents;
+    transactionEvents = [];
+    transactionActive = true;
     try{
       const result = work();
       if(result === false){
         const restored = JSON.parse(snapshot);
         Object.keys(db).forEach(k=>delete db[k]);
         Object.assign(db,restored);
+        transactionEvents = [];
+        transactionActive = false;
         return null;
       }
+      transactionActive = false;
       saveDb();
       emit('TRANSACTION_COMMITTED',{at:now()});
+      flushTransactionEvents();
+      transactionEvents = previousEvents;
       return result;
     }catch(error){
       try{
         const restored = JSON.parse(snapshot);
         Object.keys(db).forEach(k=>delete db[k]);
         Object.assign(db,restored);
-        saveDb();
       }catch(rollbackError){ console.error('[TAUR DATA] rollback failed',rollbackError); }
+      transactionEvents = [];
+      transactionActive = false;
+      transactionEvents = previousEvents;
       return validationError('TRANSACTION_FAILED',error?.message||'Transaction failed');
     }
   };
@@ -345,6 +369,13 @@
           assert('transaction create', !!temp);
           return false;
         });
+        let transactionEventCount = 0;
+        const offTransactionTest = on('*', e => { if(e?.type==='TRANSACTION_TEST_EVENT') transactionEventCount++; });
+        const txRecord = customers.create({name:'__TAUR_TX_EVENT__'});
+        const beforeTxEvents = transactionEventCount;
+        root.transaction(() => { customers.update(txRecord.id,{name:'__TAUR_TX_EVENT_UPDATED__'}); emit('TRANSACTION_TEST_EVENT',{id:txRecord.id}); return false; });
+        assert('transaction events suppressed on rollback', transactionEventCount===beforeTxEvents);
+        offTransactionTest();
         assert('transaction rollback', rollbackResult === null && !customers.list().some(x=>x.name==='__TAUR_ROLLBACK__'));
         const commitResult = transaction(()=>{
           const temp = customers.create({name:'__TAUR_COMMIT__'});
