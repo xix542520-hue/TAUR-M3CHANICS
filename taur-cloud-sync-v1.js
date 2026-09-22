@@ -31,7 +31,29 @@ function bindCoreSync(){
 async function init(){try{await loadSdk();client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const {data:{session}}=await client.auth.getSession();if(session)await signedIn(session);else statusBar(false);client.auth.onAuthStateChange((event,session)=>setTimeout(()=>session?signedIn(session):statusBar(false),0));window.taurCloud={open:openPanel,signOut,sync:syncNow,migrate:migrateLocal,invite};}catch(e){console.error(e);toast('Cloud initialization failed')}}
  function statusBar(on,state){let h=document.getElementById('taurCloudHeader');if(!h){h=document.createElement('div');h.id='taurCloudHeader';h.style.cssText='position:fixed;right:10px;top:76px;z-index:40;font-size:9px;font-weight:900;letter-spacing:1px;background:#171717;border:1px solid #333;border-radius:20px;padding:6px 9px;color:#aaa;cursor:pointer';document.body.appendChild(h);h.onclick=openPanel}h.textContent=on?('☁ '+(state||'SYNCED')):'☁ SIGN IN';h.style.color=on?'#bfe6bf':'#ddd'}
  async function signedIn(session){remoteReady=false;try{const {data,error}=await client.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(error)throw error;businessId=data;localStorage.setItem('TAUR_BUSINESS_ID',businessId);await loadRemote();subscribe();remoteReady=true;bindCoreSync();await syncNow();statusBar(true);toast('TAUR CLOUD connected',true)}catch(e){console.error(e);toast('Cloud connection error: '+(e.message||e))}}
- async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
+ function mergeRemoteRowsIntoLocal(local,rows){
+   const merged={...(local||{})};
+   for(const row of rows||[]){
+     if(!COLLECTIONS.includes(row.collection))continue;
+     if(row.collection==='settings'){
+       if(row.payload&&typeof row.payload==='object'&&!Array.isArray(row.payload))
+         merged.settings={...(merged.settings||{}),...(row.payload||{}),...((!row.payload?.updated&&row.updated_at)?{updated:row.updated_at}:{})};
+       continue;
+     }
+     if(Array.isArray(row.payload)){
+       const remoteRecords=row.payload.map(record=>({...record,...(!record?.updated&&row.updated_at?{updated:row.updated_at}:{})}));
+       merged[row.collection]=mergeRecords(merged[row.collection],remoteRecords);
+     }else if(row.payload&&typeof row.payload==='object'){
+       const remoteRecord={...row.payload,...(!row.payload.updated&&row.updated_at?{updated:row.updated_at}:{})};
+       merged[row.collection]=mergeRecords(merged[row.collection],[remoteRecord]);
+     }
+   }
+   return Object.assign(merged,applyTombstones(merged));
+ }
+  const db=mergeRemoteRowsIntoLocal(localDb()||{},data||[]);
+ let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
+ const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
+ db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
  const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
  
  for(const r of data||[]){
@@ -53,21 +75,11 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
  }
  db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
  Object.assign(db,applyTombstones(db));
- localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
+ localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}}
  window.taurCloudDiagnostics=()=>({remoteReady,businessId:!!businessId,syncing,loadingRemote,lastReconciliationPlan:lastReconciliationPlan?JSON.parse(JSON.stringify(lastReconciliationPlan)):null});
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
    const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   if(remoteError)throw remoteError;
-   const merged={...local};
-   for(const row of remoteRows||[]){
-     if(!COLLECTIONS.includes(row.collection))continue;
-     if(row.collection==='settings'){
-       if(row.payload&&typeof row.payload==='object'&&!Array.isArray(row.payload))merged.settings={...(merged.settings||{}),...row.payload};
-       continue;
-     }
-     if(Array.isArray(row.payload))merged[row.collection]=mergeRecords(merged[row.collection],row.payload);
-     else if(row.payload&&typeof row.payload==='object')merged[row.collection]=mergeRecords(merged[row.collection],[row.payload]);
-   }
-   Object.assign(merged,TAUR_CLOUD_RECONCILIATION.applyTombstones(merged));
+   const merged=mergeRemoteRowsIntoLocal(local,remoteRows);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
    const reconciliationPlan=buildReconciliationPlan(merged,remoteRows); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
    const staleByCollection={};
