@@ -41,6 +41,13 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
     return updatedAt>deletedAt;
    });
   }
+  next.tombstones=tombstones.filter(t=>{
+   const record=Array.isArray(next[t?.collection])?next[t.collection].find(x=>String(x?.id)===String(t?.recordId)):null;
+   if(!record)return true;
+   const deletedAt=Date.parse(t.deletedAt||0)||0;
+   const updatedAt=Date.parse(record.updated||record.created||0)||0;
+   return updatedAt<=deletedAt;
+  });
   return next;
  };
  return {compareRecordState,buildReconciliationPlan,applyTombstones};
