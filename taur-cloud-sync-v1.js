@@ -7,6 +7,8 @@
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const localDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
  const localSave=db=>localStorage.setItem(KEY,JSON.stringify(db));
+ const newerRecord=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;return tb>ta?b:a};
+ const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  async function init(){try{await loadSdk();client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const {data:{session}}=await client.auth.getSession();if(session)await signedIn(session);else statusBar(false);client.auth.onAuthStateChange((event,session)=>setTimeout(()=>session?signedIn(session):statusBar(false),0));window.taurCloud={open:openPanel,signOut,sync:syncNow,migrate:migrateLocal,invite};}catch(e){console.error(e);toast('Cloud initialization failed')}}
@@ -14,8 +16,7 @@
  async function signedIn(session){remoteReady=false;try{const {data,error}=await client.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(error)throw error;businessId=data;localStorage.setItem('TAUR_BUSINESS_ID',businessId);await loadRemote();subscribe();remoteReady=true;await syncNow();statusBar(true);toast('TAUR CLOUD connected',true)}catch(e){console.error(e);toast('Cloud connection error: '+(e.message||e))}}
  async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
  const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
- const newer=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||0)||0,tb=Date.parse(b?.updated||b?.created||0)||0;return tb>ta?b:a};
- const mergeById=(local,remote)=>{const map=new Map();(Array.isArray(local)?local:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(remote)?remote:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newer(map.get(x.id),x):x)});return [...map.values()]};
+ const mergeById=mergeRecords;(local,remote)=>{const map=new Map();(Array.isArray(local)?local:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(remote)?remote:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newer(map.get(x.id),x):x)});return [...map.values()]};
  for(const r of data||[]){
    if(!COLLECTIONS.includes(r.collection)&&!LEGACY_GROWTH_COLLECTIONS.includes(r.collection))continue;
    if(r.collection.startsWith('growth_')){
@@ -91,6 +92,19 @@
  async function invite(){const w=document.createElement('div');w.className='taur-cloud-invite';w.innerHTML='<div class="taur-cloud-invite-card"><b>INVITE PARTNER</b><label>PARTNER EMAIL</label><input id="taurInviteEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com"><div class="taur-cloud-invite-actions"><button class="secondary" id="taurInviteCancel">CANCEL</button><button id="taurInviteSend">SEND INVITE</button></div></div>';document.body.appendChild(w);w.querySelector('#taurInviteCancel').onclick=()=>w.remove();w.querySelector('#taurInviteSend').onclick=async()=>{const email=w.querySelector('#taurInviteEmail').value.trim();if(!email)return alert('Enter a partner email.');const {error}=await client.rpc('invite_business_member',{invite_email:email,member_role:'partner'});if(error)return alert(error.message);w.remove();toast('Partner added.');renderPanelBody()};w.querySelector('#taurInviteEmail').focus()}
  function subscribe(){if(!client||!businessId)return;if(channel)client.removeChannel(channel);channel=client.channel('taur-cloud-records').on('postgres_changes',{event:'*',schema:'public',table:'app_records',filter:`business_id=eq.${businessId}`},()=>{if(!syncing&&!loadingRemote)loadRemote().catch(console.error)}).subscribe()}
  let scheduled=null;const queue=()=>{if(!remoteReady||syncing||loadingRemote)return;statusBar(true,'SAVING');clearTimeout(scheduled);scheduled=setTimeout(()=>syncNow(),1200)};const originalSet=localStorage.setItem.bind(localStorage);localStorage.setItem=function(k,v){originalSet(k,v);if(k===KEY||k==='TAUR_GROWTH_V1')queue()};window.addEventListener('beforeunload',()=>{if(remoteReady)syncNow()});window.addEventListener('taur-cloud-sync',queue);
+
+ window.taurCloudTests={run:()=>{
+   const results=[];const assert=(name,ok)=>results.push({name,pass:!!ok});
+   const a={id:'a',updated:'2026-01-01T00:00:00Z',value:1},b={id:'b',updated:'2026-01-01T00:00:00Z',value:2};
+   const merged=mergeRecords([a],[b]);assert('different records both survive',merged.length===2);
+   const newer=mergeRecords([a],[{...a,updated:'2026-01-02T00:00:00Z',value:3}]);assert('newer update wins',newer[0].value===3);
+   const older=mergeRecords([a],[{...a,updated:'2025-12-01T00:00:00Z',value:9}]);assert('older update loses',older[0].value===1);
+   const tomb={id:'customers:a',collection:'customers',recordId:'a',deletedAt:'2026-01-03T00:00:00Z'};
+   const recreated={id:'a',updated:'2026-01-04T00:00:00Z',value:4};
+   const tMerged=mergeRecords([tomb],[recreated]);assert('newer recreation beats older tombstone',tMerged.some(x=>x.id==='a'&&x.value===4));
+   const staleRecreate=mergeRecords([tomb],[{...recreated,updated:'2026-01-02T00:00:00Z'}]);assert('newer tombstone beats stale recreation',staleRecreate.some(x=>x.id==='customers:a'));
+   return {ok:results.every(x=>x.pass),results};
+ }};
  if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='TOMBSTONE_CREATED'||e.type==='DATA_SAVED')queue()});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
