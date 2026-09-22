@@ -61,7 +61,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      if(Array.isArray(row.payload))merged[row.collection]=mergeRecords(merged[row.collection],row.payload);
      else if(row.payload&&typeof row.payload==='object')merged[row.collection]=mergeRecords(merged[row.collection],[row.payload]);
    }
-   applyTombstones(merged);
+   Object.assign(merged,TAUR_CLOUD_RECONCILIATION.applyTombstones(merged));
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
    const reconciliationPlan=buildReconciliationPlan(merged,remoteRows); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
    const staleByCollection={};
