@@ -67,9 +67,16 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      }
      const rows=Array.isArray(merged[collection])?merged[collection]:[];
      const localIds=new Set(rows.filter(r=>r?.id).map(r=>String(r.id)));
-     for(const record of rows){
-       if(!record?.id)continue;
-       const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:String(record.id),payload:record,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});
+     const syncTimestamp=new Date().toISOString();
+     const payloadRows=rows.filter(record=>record?.id).map(record=>({
+       business_id:businessId,
+       collection,
+       record_id:String(record.id),
+       payload:record,
+       updated_at:syncTimestamp
+     }));
+     if(payloadRows.length){
+       const {error}=await client.from('app_records').upsert(payloadRows,{onConflict:'business_id,collection,record_id'});
        if(error)throw error;
      }
      const remoteIds=(remoteRows||[]).filter(row=>row.collection===collection).map(row=>String(row.record_id));
