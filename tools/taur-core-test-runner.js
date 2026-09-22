@@ -123,6 +123,15 @@ assert(rollbackLifecycle?.transactionId===rollbackLifecycle?.detail?.transaction
 assert(rollbackLifecycle?.transactionId,'Rollback lifecycle event should be transaction-tagged');
 assert(typeof rollbackLifecycle?.detail?.eventCount==='number','Rollback lifecycle event should declare eventCount');
 assert(!rollbackEvents.some(e=>e.type==='CUSTOMER_CREATED'),'Rolled-back entity events must not leak');
+assert(!sandbox.window.TAUR.transaction(()=>false),'Rejected callback should return null');
+assert(sandbox.window.TAUR.transaction(()=>true)===true,'Transaction state should be clean after rejected callback');
+const exceptionStart=sandbox.window.TAUR.events.history().length;
+assert(sandbox.window.TAUR.transaction(()=>{throw new Error('forced transaction failure')})===null,'Thrown transaction should return null');
+const exceptionEvents=sandbox.window.TAUR.events.history().slice(exceptionStart);
+const exceptionRollback=exceptionEvents.find(e=>e.type==='TRANSACTION_ROLLED_BACK');
+assert(exceptionRollback?.detail?.reason==='exception','Exception rollback should identify exception reason');
+assert(sandbox.window.TAUR.transaction(()=>true)===true,'Transaction state should be clean after exception rollback');
+
 
 sandbox.window.TAUR.events.clear();
 const boundaryStart=sandbox.window.TAUR.events.history().length;
