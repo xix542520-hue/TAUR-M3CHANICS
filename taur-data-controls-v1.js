@@ -84,7 +84,7 @@
       patch.priceBookSelections=[];patch.addOns=[];
     }
     const coreAvailable=typeof window.TAUR?.jobs?.update==='function';const updated=coreAvailable?window.TAUR.jobs.update(id,patch):null;if(coreAvailable&&!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
-    if(!updated){Object.assign(j,patch,{updated:new Date().toISOString()});saveX();}
+    if(!coreAvailable){Object.assign(j,patch,{updated:new Date().toISOString()});saveX();}
     delete j.__editPackageSelection;
     close();render();
   };
