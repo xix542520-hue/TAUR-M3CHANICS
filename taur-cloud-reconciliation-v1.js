@@ -60,7 +60,9 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
    next[t.collection]=next[t.collection].filter(record=>{
     if(String(record?.id)!==String(t.recordId))return true;
     const updatedAt=Date.parse(record.updated||record.created||0)||0;
-    return updatedAt>deletedAt;
+    if(updatedAt>deletedAt)return true;
+    if(updatedAt<deletedAt)return false;
+    return stableStringify(record)<stableStringify(t);
    });
   }
   next.tombstones=tombstones.filter(t=>{
