@@ -6,6 +6,13 @@
   'use strict';
 
   const root = window.TAUR = window.TAUR || {};
+  root.errors = root.errors || [];
+  function validationError(code, message, detail){
+    const error = {code, message, detail: detail || null, at: now()};
+    root.errors.push(error);
+    emit('DATA_ERROR', error);
+    return null;
+  }
   const listeners = {};
 
   const now = () => new Date().toISOString();
@@ -53,6 +60,7 @@
   }
 
   function create(name, data){
+    if(!data || typeof data !== 'object') return validationError('INVALID_RECORD','Record payload must be an object',{collection:name});
     const record = Object.assign({
       id: id(),
       created: now(),
@@ -66,7 +74,8 @@
 
   function update(name, recordId, patch){
     const record = find(name, recordId);
-    if(!record) return null;
+    if(!record) return validationError('NOT_FOUND','Record was not found',{collection:name,id:recordId});
+    if(patch && typeof patch !== 'object') return validationError('INVALID_PATCH','Patch must be an object',{collection:name,id:recordId});
     Object.assign(record, patch || {}, {updated: now()});
     saveDb();
     emit(name.toUpperCase() + '_UPDATED', record);
@@ -163,6 +172,7 @@
 
     baseAmount: payment => {
       if(!payment) return 0;
+      if(Number(payment.amount||0) < 0 || Number(payment.tip||0) < 0) return 0;
       if(payment.baseAmount !== undefined && payment.baseAmount !== null)
         return Number(payment.baseAmount || 0);
       return Number(payment.amount || 0) - Number(payment.tip || 0);
