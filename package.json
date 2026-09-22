@@ -1,0 +1,5 @@
+{
+  "name":"taur-m3chanics-tests",
+  "private":true,
+  "scripts":{"test":"node tools/taur-core-test-runner.js && node tools/taur-cloud-contract-test.js"}
+}
