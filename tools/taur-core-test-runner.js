@@ -116,6 +116,20 @@ assert(rollbackEvents.some(e=>e.type==='TRANSACTION_ROLLED_BACK'),'Rollback even
 assert(!rollbackEvents.some(e=>e.type==='CUSTOMER_CREATED'),'Rolled-back entity events must not leak');
 
 sandbox.window.TAUR.events.clear();
+const boundaryStart=sandbox.window.TAUR.events.history().length;
+const boundaryResult=sandbox.window.TAUR.transaction(()=>{
+  assert(sandbox.window.TAUR.customers.create({id:'__TX_BOUNDARY__',name:'Boundary Test'}),'Boundary transaction create should succeed');
+  for(let i=0;i<255;i++) sandbox.window.TAUR.emit('BOUNDARY_TEST',{index:i});
+  return true;
+});
+assert(boundaryResult,'Boundary transaction should commit');
+const boundaryEvents=sandbox.window.TAUR.events.history().slice(boundaryStart);
+assert(boundaryEvents.length===250,'Event history should stay bounded after a large transaction');
+const boundaryCommit=boundaryEvents[boundaryEvents.length-1];
+assert(boundaryCommit?.type==='TRANSACTION_COMMITTED','Commit event should survive transaction history bounding');
+assert(boundaryCommit?.transactionId,'Bounded transaction commit should retain its transaction ID');
+assert(boundaryEvents.some(e=>e.transactionId===boundaryCommit.transactionId),'At least one grouped transaction event should survive eviction');
+
 for(let i=0;i<260;i++) sandbox.window.TAUR.emit('HISTORY_TEST',{index:i});
 const bounded=sandbox.window.TAUR.events.history();
 assert(bounded.length===250,'Event history should remain bounded at 250 entries');
