@@ -94,5 +94,17 @@ check('equal-time tombstone resolution is deterministic',()=>{
 });
 
 
+check('applyTombstones is idempotent',()=>{
+ const input={customers:[{id:'idem',updated:'2026-01-01T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'idem',deletedAt:'2026-01-02T00:00:00.000Z'}]};
+ const once=reconciliation.applyTombstones(input),twice=reconciliation.applyTombstones(once);
+ assert.deepStrictEqual(twice,once);
+});
+const idempotentLocal={customers:[{id:'same',updated:'2026-01-03T00:00:00.000Z',v:1}]};
+const idempotentRemote=[{collection:'customers',record_id:'same',payload:{id:'same',updated:'2026-01-02T00:00:00.000Z',v:0},updated_at:'2026-01-02T00:00:00.000Z'}];
+check('planner is idempotent for unchanged inputs',()=>{
+ const p1=reconciliation.buildReconciliationPlan(idempotentLocal,idempotentRemote);
+ const p2=reconciliation.buildReconciliationPlan(idempotentLocal,idempotentRemote);
+ assert.deepStrictEqual(p2,p1);
+});
 console.log('PASS — Cloud reconciliation behavioral tests');
 cases.forEach((name,i)=>console.log('  '+(i+1)+'. '+name));
