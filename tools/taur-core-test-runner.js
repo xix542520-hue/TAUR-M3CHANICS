@@ -114,4 +114,14 @@ assert(!sandbox.window.TAUR.customers.get('__TX_ROLLBACK__'),'Rolled-back record
 const rollbackEvents=sandbox.window.TAUR.events.history().slice(rollbackStart);
 assert(rollbackEvents.some(e=>e.type==='TRANSACTION_ROLLED_BACK'),'Rollback event should be recorded');
 assert(!rollbackEvents.some(e=>e.type==='CUSTOMER_CREATED'),'Rolled-back entity events must not leak');
+
+sandbox.window.TAUR.events.clear();
+for(let i=0;i<260;i++) sandbox.window.TAUR.emit('HISTORY_TEST',{index:i});
+const bounded=sandbox.window.TAUR.events.history();
+assert(bounded.length===250,'Event history should remain bounded at 250 entries');
+assert(bounded[0]?.detail?.index===10,'Oldest events should be evicted first');
+assert(bounded[bounded.length-1]?.detail?.index===259,'Newest event should remain after eviction');
+assert(sandbox.window.TAUR.events.recent(5).length===5,'Recent event window should respect requested limit');
+sandbox.window.TAUR.events.clear();
+assert(sandbox.window.TAUR.events.history().length===0,'Event history clear should empty the buffer');
 console.log('PASS — Data Core self-tests:',result.results.length);
