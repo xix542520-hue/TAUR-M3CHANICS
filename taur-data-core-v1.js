@@ -302,6 +302,11 @@
 
   root.on = on;
   root.emit = emit;
+  root.diagnostics = {
+    errors: () => root.errors.slice(),
+    lastError: () => root.errors.length ? root.errors[root.errors.length - 1] : null,
+    clearErrors: () => { root.errors.length = 0; return true; }
+  };
 
   root.commit = function(){
     return saveDb();
