@@ -50,13 +50,30 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const merged={...local};
    for(const row of remoteRows||[]){
      if(!COLLECTIONS.includes(row.collection))continue;
+     if(row.collection==='settings'){
+       if(row.payload&&typeof row.payload==='object'&&!Array.isArray(row.payload))merged.settings={...(merged.settings||{}),...row.payload};
+       continue;
+     }
      if(Array.isArray(row.payload))merged[row.collection]=mergeRecords(merged[row.collection],row.payload);
-     else if(row.collection==='settings')merged.settings={...(merged.settings||{}),...(row.payload||{})};
-     else merged[row.collection]=row.payload;
+     else if(row.payload&&typeof row.payload==='object')merged[row.collection]=mergeRecords(merged[row.collection],[row.payload]);
    }
    applyTombstones(merged);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
-   for(const collection of COLLECTIONS){const payload=(merged[collection]??(collection==='settings'?{}:[]));const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});if(error)throw error}
+   for(const collection of COLLECTIONS){
+     if(collection==='settings'){
+       const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload:(merged.settings||{}),updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});
+       if(error)throw error;
+       continue;
+     }
+     const rows=Array.isArray(merged[collection])?merged[collection]:[];
+     for(const record of rows){
+       if(!record?.id)continue;
+       const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:String(record.id),payload:record,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});
+       if(error)throw error;
+     }
+     const {error:legacyDeleteError}=await client.from('app_records').delete().eq('business_id',businessId).eq('collection',collection).eq('record_id',collection);
+     if(legacyDeleteError)throw legacyDeleteError;
+   }
    remoteReady=true;statusBar(true,'SYNCED');return true;
  }catch(e){console.error(e);toast('Cloud sync failed: '+(e.message||e));return false}finally{syncing=false}}
  async function migrateLocal(){if(!client||!businessId)return;const db=localDb();if(!db)return;const {data,error}=await client.from('app_records').select('collection').eq('business_id',businessId).limit(1);if(error)return toast('Could not check cloud: '+error.message);if((data||[]).length&&!confirm('Cloud data already exists. Replace it with this device\'s current data?'))return;if(await syncNow()){toast('Local TAUR data uploaded to shared cloud',true);openPanel()}}
