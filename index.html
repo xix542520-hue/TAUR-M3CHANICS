@@ -144,11 +144,13 @@ render();
       const id=uid(),now=new Date().toISOString();
       const total=Math.max(0,Number(w.querySelector('#xTotal').value||0));
       const picks=Array.isArray(w.__taurPriceSelection)?w.__taurPriceSelection:[];
-      db.jobs.push({id,created:now,updated:now,type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total,warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:picks,priceBookSelections:picks,leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value});
-      save();
+      const jobData={type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total,warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:picks,priceBookSelections:picks,leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value};
+      const j=window.TAUR?.jobs?.create?window.TAUR.jobs.create(jobData):null;
+      if(!j){const fallback={id,created:now,updated:now,...jobData};db.jobs.push(fallback);save();}
+      const createdId=j?.id||id;
       window.dispatchEvent(new Event('taur-cloud-sync'));
       close();
-      if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(id);else jobFile(id);
+      if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(createdId);else jobFile(createdId);
     });
     const cust=document.querySelector('#xCustomer'),veh=document.querySelector('#xVehicle');
     cust.onchange=()=>{veh.innerHTML=vehicleOptions(cust.value)};
