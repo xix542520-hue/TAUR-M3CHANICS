@@ -40,6 +40,17 @@ assert(!source.includes('const compareRecordState='),'Cloud Sync must not reimpl
 assert(!source.includes('const buildReconciliationPlan='),'Cloud Sync must not reimplement buildReconciliationPlan');
 assert(source.includes('TAUR_CLOUD_RECONCILIATION.compareRecordState'),'Cloud Sync must delegate comparison');
 assert(source.includes('TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan'),'Cloud Sync must delegate planning');
+
+const tombstoneEngine=reconciliation.applyTombstones;
+assert(tombstoneEngine,'Standalone reconciliation module must expose applyTombstones');
+const stale={customers:[{id:'cust-1',updated:'2026-01-01T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
+const staleResult=tombstoneEngine(stale);
+assert.strictEqual(staleResult.customers.length,0);
+cases.push('older recreation removed by newer tombstone');
+const recreation={customers:[{id:'cust-1',updated:'2026-01-03T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
+const recreationResult=tombstoneEngine(recreation);
+assert.strictEqual(recreationResult.customers.length,1);
+cases.push('newer recreation survives older tombstone');
 console.log('PASS — Cloud Sync test contract covers merge/tombstone, event-trigger, and per-record write invariants');
 const vm=require('vm');
 const cases=[];
