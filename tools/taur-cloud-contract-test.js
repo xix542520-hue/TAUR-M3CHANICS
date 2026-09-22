@@ -1,6 +1,8 @@
 const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('taur-cloud-sync-v1.js','utf8');
 const required=[
+  'legacyGrowth[k]=mergeRecords',
+  'applyTombstones(merged)',
   'const mergeRecords=',
   'const applyTombstones=',
   'window.taurCloudTests={run:'
