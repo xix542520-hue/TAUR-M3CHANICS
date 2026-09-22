@@ -344,7 +344,7 @@
         transactionEvents = [];
         transactionActive = false;
         transactionId = '';
-        emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:rolledBackTransactionId,eventCount:rolledBackEventCount,reason:'callback returned false'});
+        emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:rolledBackTransactionId,eventCount:rolledBackEventCount,outcome:'ROLLED_BACK',reason:'callback returned false'});
         return null;
       }
       transactionActive = false;
@@ -352,7 +352,7 @@
       const committedEventCount = transactionEvents.length;
       saveDb();
       flushTransactionEvents();
-      emit('TRANSACTION_COMMITTED',{at:now(),transactionId:committedTransactionId,eventCount:committedEventCount});
+      emit('TRANSACTION_COMMITTED',{at:now(),transactionId:committedTransactionId,eventCount:committedEventCount,outcome:'COMMITTED'});
       transactionEvents = previousEvents;
       transactionId = '';
       return result;
@@ -367,7 +367,7 @@
       transactionEvents = [];
       transactionActive = false;
       transactionId = '';
-      emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:failedTransactionId,eventCount:failedEventCount,reason:'exception'});
+      emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:failedTransactionId,eventCount:failedEventCount,outcome:'ROLLED_BACK',reason:'exception'});
       transactionEvents = previousEvents;
       return validationError('TRANSACTION_FAILED',error?.message||'Transaction failed');
     }
