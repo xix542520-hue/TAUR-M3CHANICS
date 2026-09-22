@@ -210,6 +210,8 @@
     quotes,
     payments,
     pricebook,
+    partners,
+    referrals,
     leads,
     estimates,
     refresh: () => currentDb()
