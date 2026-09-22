@@ -19,10 +19,10 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
   for(const collection of cols){
    if(collection==='settings'){
     const legacy=(remoteByCollection[collection]||[]).some(row=>String(row.record_id)===collection);
-    plan.collections[collection]={upserts:1,staleDeletes:0,legacyDeletes:legacy?1:0,actions:{create:1,update:0,keep:0,delete:0}};
+    plan.collections[collection]={upserts:1,staleDeletes:0,legacyDeletes:legacy?1:0,actions:{create:1,update:0,keep:0,delete:0},ids:{create:[collection],update:[],keep:[],delete:[]}};
     plan.totals.upserts++;plan.totals.create++;plan.totals.legacyDeletes+=legacy?1:0;continue;
    }
-   const rows=Array.isArray(local?.[collection])?local[collection]:[],localMap=new Map(),remoteMap=new Map(),actions={create:0,update:0,keep:0,delete:0};
+   const rows=Array.isArray(local?.[collection])?local[collection]:[],localMap=new Map(),remoteMap=new Map(),actions={create:0,update:0,keep:0,delete:0},ids={create:[],update:[],keep:[],delete:[]};
    rows.filter(r=>r?.id).forEach(record=>{const id=String(record.id);localMap.set(id,localMap.has(id)?newerRecord(localMap.get(id),record):record)});
    (remoteByCollection[collection]||[]).filter(r=>String(r.record_id)!==collection).forEach(row=>{
     const id=String(row.record_id||row.payload?.id||'');
@@ -34,9 +34,9 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
     if(!remote){actions.create++;continue}
     if(compareRecordState(record,remote)==='UPDATE')actions.update++;else actions.keep++;
    }
-   const staleIds=[...remoteMap.keys()].filter(id=>!localMap.has(id));actions.delete=staleIds.length;
+   const staleIds=[...remoteMap.keys()].filter(id=>!localMap.has(id));actions.delete=staleIds.length;ids.delete.push(...staleIds);
    const legacyDeletes=(remoteByCollection[collection]||[]).some(row=>String(row.record_id)===collection)?1:0;
-   plan.collections[collection]={upserts:actions.create+actions.update,staleDeletes:staleIds.length,legacyDeletes,actions};
+   plan.collections[collection]={upserts:actions.create+actions.update,staleDeletes:staleIds.length,legacyDeletes,actions,ids};
    plan.totals.upserts+=actions.create+actions.update;plan.totals.staleDeletes+=staleIds.length;plan.totals.legacyDeletes+=legacyDeletes;
    plan.totals.create+=actions.create;plan.totals.update+=actions.update;plan.totals.keep+=actions.keep;plan.totals.delete+=actions.delete;
   } return plan;
