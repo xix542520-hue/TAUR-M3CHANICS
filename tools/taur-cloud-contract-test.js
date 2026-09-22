@@ -13,7 +13,10 @@ const required=[
   'coreSyncTimer=setTimeout(()=>{syncNow()},350)',
   "record_id:String(record.id)",
   "client.from('app_records').delete()"
-];
+],
+  'const TAUR_CLOUD_RECONCILIATION=',
+  'newerRecord',
+  'mergeRecords',;
 for(const token of required) assert(source.includes(token),'Missing cloud sync contract: '+token);
 const testBlock=source.slice(source.indexOf('window.taurCloudTests={run:'),source.indexOf('};',source.indexOf('window.taurCloudTests={run:'))+2);
 assert(testBlock.includes('newer update wins'));
