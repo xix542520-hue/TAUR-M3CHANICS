@@ -209,6 +209,7 @@
     jobs,
     quotes,
     payments,
+    pricebook,
     leads,
     estimates,
     refresh: () => currentDb()
