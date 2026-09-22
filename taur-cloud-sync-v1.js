@@ -18,7 +18,7 @@
  async function signedIn(session){remoteReady=false;try{const {data,error}=await client.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(error)throw error;businessId=data;localStorage.setItem('TAUR_BUSINESS_ID',businessId);await loadRemote();subscribe();remoteReady=true;await syncNow();statusBar(true);toast('TAUR CLOUD connected',true)}catch(e){console.error(e);toast('Cloud connection error: '+(e.message||e))}}
  async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
  const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
- const mergeById=mergeRecords;(local,remote)=>{const map=new Map();(Array.isArray(local)?local:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(remote)?remote:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newer(map.get(x.id),x):x)});return [...map.values()]};
+ 
  for(const r of data||[]){
    if(!COLLECTIONS.includes(r.collection)&&!LEGACY_GROWTH_COLLECTIONS.includes(r.collection))continue;
    if(r.collection.startsWith('growth_')){
@@ -26,22 +26,20 @@
      legacyGrowth[k]=mergeById(legacyGrowth[k],Array.isArray(r.payload)?r.payload:[]);
      continue;
    }
-   if(Array.isArray(r.payload)) db[r.collection]=mergeById(db[r.collection],r.payload);
+   if(Array.isArray(r.payload)) db[r.collection]=mergeRecords(db[r.collection],r.payload);
    else if(r.collection==='settings') db.settings={...(db.settings||{}),...(r.payload||{})};
    else db[r.collection]=r.payload;
  }
- db.leads=mergeById(db.leads,legacyGrowth.leads); db.estimates=mergeById(db.estimates,legacyGrowth.estimates);
+ db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
  applyTombstones(db);
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
    const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
    if(remoteError)throw remoteError;
-   const newer=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||0)||0,tb=Date.parse(b?.updated||b?.created||0)||0;return tb>ta?b:a};
-   const mergeById=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newer(map.get(x.id),x):x)});return [...map.values()]};
    const merged={...local};
    for(const row of remoteRows||[]){
      if(!COLLECTIONS.includes(row.collection))continue;
-     if(Array.isArray(row.payload))merged[row.collection]=mergeById(merged[row.collection],row.payload);
+     if(Array.isArray(row.payload))merged[row.collection]=mergeRecords(merged[row.collection],row.payload);
      else if(row.collection==='settings')merged.settings={...(merged.settings||{}),...(row.payload||{})};
      else merged[row.collection]=row.payload;
    }
@@ -83,6 +81,7 @@
    const merged=mergeRecords([a],[b]);assert('different records both survive',merged.length===2);
    const newer=mergeRecords([a],[{...a,updated:'2026-01-02T00:00:00Z',value:3}]);assert('newer update wins',newer[0].value===3);
    const older=mergeRecords([a],[{...a,updated:'2025-12-01T00:00:00Z',value:9}]);assert('older update loses',older[0].value===1);
+   const tie=mergeRecords([a],[{...a,updated:'2026-01-01T00:00:00Z',value:7}]);assert('equal timestamps remain deterministic',tie[0].value===1);
    const tomb={id:'customers:a',collection:'customers',recordId:'a',deletedAt:'2026-01-03T00:00:00Z'};
    const freshDb={customers:[{id:'a',updated:'2026-01-04T00:00:00Z',value:4}],tombstones:[tomb]};
    applyTombstones(freshDb);assert('newer recreation beats tombstone',freshDb.customers.some(x=>x.id==='a')&&!freshDb.tombstones.some(x=>x.id===tomb.id));
