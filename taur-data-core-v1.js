@@ -346,6 +346,21 @@
           return false;
         });
         assert('transaction rollback', rollbackResult === null && !customers.list().some(x=>x.name==='__TAUR_ROLLBACK__'));
+        const commitResult = transaction(()=>{
+          const temp = customers.create({name:'__TAUR_COMMIT__'});
+          assert('transaction commit create', !!temp);
+          return temp;
+        });
+        assert('transaction commit', !!commitResult && !!customers.get(commitResult.id));
+        customers.remove(commitResult.id);
+        const partner = partners.create({name:'__TAUR_TEST_PARTNER__'});
+        assert('partner create', !!partner);
+        const referral = referrals.create({customerId:customer.id,vehicleId:vehicle.id,partnerId:partner.id,jobId:job.id});
+        assert('referral create', !!referral);
+        assert('referral customer mismatch rejected', referrals.create({customerId:'__other__',vehicleId:vehicle.id}) === null);
+        assert('job deletion blocked by payment history', jobs.remove(job.id) === null);
+        remove('referrals',referral.id);
+        remove('partners',partner.id);
         const tombstone = remove('payments',payment.id);
         assert('safe delete creates tombstone', !!tombstone && !!tombstones.get('payments:'+payment.id));
         return {ok:true,results};
