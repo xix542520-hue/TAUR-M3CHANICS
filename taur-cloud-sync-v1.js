@@ -23,7 +23,7 @@
    if(!COLLECTIONS.includes(r.collection)&&!LEGACY_GROWTH_COLLECTIONS.includes(r.collection))continue;
    if(r.collection.startsWith('growth_')){
      const k=r.collection.replace('growth_','');
-     legacyGrowth[k]=mergeById(legacyGrowth[k],Array.isArray(r.payload)?r.payload:[]);
+     legacyGrowth[k]=mergeRecords(legacyGrowth[k],Array.isArray(r.payload)?r.payload:[]);
      continue;
    }
    if(Array.isArray(r.payload)) db[r.collection]=mergeRecords(db[r.collection],r.payload);
@@ -43,24 +43,7 @@
      else if(row.collection==='settings')merged.settings={...(merged.settings||{}),...(row.payload||{})};
      else merged[row.collection]=row.payload;
    }
-   const tombstones=Array.isArray(merged.tombstones)?merged.tombstones:[];
-   for(const t of tombstones){
-     if(!t?.collection||!t?.recordId)continue;
-     if(!Array.isArray(merged[t.collection]))continue;
-     const deletedAt=Date.parse(t.deletedAt||0)||0;
-     merged[t.collection]=merged[t.collection].filter(x=>{
-       if(x?.id!==t.recordId)return true;
-       const updatedAt=Date.parse(x.updated||x.created||0)||0;
-       return updatedAt>deletedAt;
-     });
-   }
-   merged.tombstones=tombstones.filter(t=>{
-     const record=Array.isArray(merged[t?.collection])?merged[t.collection].find(x=>x?.id===t.recordId):null;
-     if(!record)return true;
-     const deletedAt=Date.parse(t.deletedAt||0)||0;
-     const updatedAt=Date.parse(record.updated||record.created||0)||0;
-     return updatedAt<=deletedAt;
-   });
+   applyTombstones(merged);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
    for(const collection of COLLECTIONS){const payload=(merged[collection]??(collection==='settings'?{}:[]));const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});if(error)throw error}
    remoteReady=true;statusBar(true,'SYNCED');return true;
