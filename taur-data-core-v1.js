@@ -165,7 +165,7 @@
       if(!payment) return 0;
       if(payment.baseAmount !== undefined && payment.baseAmount !== null)
         return Number(payment.baseAmount || 0);
-      return Number(payment.amount || 0);
+      return Number(payment.amount || 0) - Number(payment.tip || 0);
     },
 
     tipAmount: payment => Number(payment && payment.tip || 0),
