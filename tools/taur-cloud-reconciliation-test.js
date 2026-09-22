@@ -15,6 +15,16 @@ check('remote newer → KEEP',()=>assert.strictEqual(reconciliation.compareRecor
 const equalLocal={id:'x',updated:'2026-01-02T00:00:00.000Z',value:'a'};
 const equalRemote={payload:{id:'x',updated:'2026-01-02T00:00:00.000Z',value:'b'},updated_at:'2026-01-02T00:00:00.000Z'};
 check('equal timestamps → deterministic',()=>assert(['UPDATE','KEEP'].includes(reconciliation.compareRecordState(equalLocal,equalRemote))));
+const reorderedA={id:'eq',updated:'2026-01-02T00:00:00.000Z',alpha:1,nested:{z:2,a:3}};
+const reorderedB={nested:{a:3,z:2},alpha:1,updated:'2026-01-02T00:00:00.000Z',id:'eq'};
+check('equal timestamps with reordered keys compare identically',()=>assert.strictEqual(reconciliation.compareRecordState(reorderedA,{payload:reorderedB,updated_at:reorderedB.updated}),'KEEP'));
+check('equal timestamps merge deterministically',()=>{
+  const a={id:'tie',updated:'2026-01-02T00:00:00.000Z',b:2,a:1};
+  const b={id:'tie',updated:'2026-01-02T00:00:00.000Z',a:1,b:3};
+  const first=reconciliation.mergeRecords([a],[b])[0],second=reconciliation.mergeRecords([b],[a])[0];
+  assert.deepStrictEqual(first,second);
+});
+
 const plan=reconciliation.buildReconciliationPlan(
  {customers:[{id:'new',updated:'2026-01-03T00:00:00.000Z'}]},
  [
