@@ -59,6 +59,36 @@
     return db;
   }
 
+  function validateRelationships(name, data, recordId){
+    const d = data || {};
+    const exists = (collection, id) => !id || !!find(collection, id);
+    if(name === 'vehicles' && d.customerId && !exists('customers', d.customerId))
+      return validationError('INVALID_REFERENCE','Vehicle references a missing customer',{collection:name,id:recordId,field:'customerId',value:d.customerId});
+    if(name === 'jobs'){
+      if(d.customerId && !exists('customers', d.customerId))
+        return validationError('INVALID_REFERENCE','Job references a missing customer',{collection:name,id:recordId,field:'customerId',value:d.customerId});
+      if(d.vehicleId && !exists('vehicles', d.vehicleId))
+        return validationError('INVALID_REFERENCE','Job references a missing vehicle',{collection:name,id:recordId,field:'vehicleId',value:d.vehicleId});
+      if(d.customerId && d.vehicleId){
+        const vehicle=find('vehicles',d.vehicleId);
+        if(vehicle && vehicle.customerId && vehicle.customerId !== d.customerId)
+          return validationError('REFERENCE_MISMATCH','Job customer does not own the referenced vehicle',{collection:name,id:recordId});
+      }
+    }
+    if(name === 'quotes' && d.jobId && !exists('jobs', d.jobId))
+      return validationError('INVALID_REFERENCE','Quote references a missing job',{collection:name,id:recordId,field:'jobId',value:d.jobId});
+    if(name === 'payments' && d.jobId && !exists('jobs', d.jobId))
+      return validationError('INVALID_REFERENCE','Payment references a missing job',{collection:name,id:recordId,field:'jobId',value:d.jobId});
+    if(name === 'referrals'){
+      if(d.customerId && !exists('customers',d.customerId)) return validationError('INVALID_REFERENCE','Referral references a missing customer',{collection:name,id:recordId,field:'customerId',value:d.customerId});
+      if(d.vehicleId && !exists('vehicles',d.vehicleId)) return validationError('INVALID_REFERENCE','Referral references a missing vehicle',{collection:name,id:recordId,field:'vehicleId',value:d.vehicleId});
+      if(d.partnerId && !exists('partners',d.partnerId)) return validationError('INVALID_REFERENCE','Referral references a missing partner',{collection:name,id:recordId,field:'partnerId',value:d.partnerId});
+      if(d.jobId && !exists('jobs',d.jobId)) return validationError('INVALID_REFERENCE','Referral references a missing job',{collection:name,id:recordId,field:'jobId',value:d.jobId});
+      if(d.customerId && d.vehicleId){const v=find('vehicles',d.vehicleId);if(v?.customerId && v.customerId!==d.customerId)return validationError('REFERENCE_MISMATCH','Referral customer does not own the referenced vehicle',{collection:name,id:recordId});}
+    }
+    return true;
+  }
+
   function create(name, data){
     if(!data || typeof data !== 'object') return validationError('INVALID_RECORD','Record payload must be an object',{collection:name});
     const record = Object.assign({
@@ -66,6 +96,7 @@
       created: now(),
       updated: now()
     }, data || {});
+    if(!validateRelationships(name,record,record.id)) return null;
     ensureCollection(name).push(record);
     saveDb();
     emit(name.toUpperCase() + '_CREATED', record);
@@ -76,6 +107,8 @@
     const record = find(name, recordId);
     if(!record) return validationError('NOT_FOUND','Record was not found',{collection:name,id:recordId});
     if(patch && typeof patch !== 'object') return validationError('INVALID_PATCH','Patch must be an object',{collection:name,id:recordId});
+    const candidate = Object.assign({}, record, patch || {});
+    if(!validateRelationships(name,candidate,recordId)) return null;
     Object.assign(record, patch || {}, {updated: now()});
     saveDb();
     emit(name.toUpperCase() + '_UPDATED', record);
@@ -86,6 +119,22 @@
     const collection = ensureCollection(name);
     const index = collection.findIndex(x => x && x.id === recordId);
     if(index < 0) return null;
+    const linked = {
+      customers: ['vehicles','jobs','referrals'],
+      vehicles: ['jobs','referrals'],
+      jobs: ['payments','quotes','referrals'],
+      partners: ['referrals']
+    };
+    const dependents = (linked[name]||[]).flatMap(child =>
+      ensureCollection(child).filter(x => x && (
+        (name==='customers' && x.customerId===recordId) ||
+        (name==='vehicles' && (x.vehicleId===recordId || x.customerId===recordId && child==='referrals')) ||
+        (name==='jobs' && x.jobId===recordId) ||
+        (name==='partners' && x.partnerId===recordId)
+      )).map(x=>({collection:child,id:x.id}))
+    );
+    if(dependents.length)
+      return validationError('DEPENDENCY_EXISTS','Record cannot be removed while linked records exist',{collection:name,id:recordId,dependents});
     const removed = collection.splice(index,1)[0];
     const tombstones = ensureCollection('tombstones');
     const tombstoneId = name + ':' + recordId;
