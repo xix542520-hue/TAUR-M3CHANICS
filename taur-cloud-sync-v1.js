@@ -5,8 +5,9 @@
  const LEGACY_GROWTH_COLLECTIONS=['growth_leads','growth_estimates'];
  let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null;
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
- const localDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
- const localSave=db=>localStorage.setItem(KEY,JSON.stringify(db));
+ const legacyLocalDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
+ const localDb=()=>window.TAUR?.data?window.TAUR.data.db:legacyLocalDb();
+ const localSave=db=>{if(typeof window.taurSetDb==='function')window.taurSetDb(db);else localStorage.setItem(KEY,JSON.stringify(db))};
  const newerRecord=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;return tb>ta?b:a};
  const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
