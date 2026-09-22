@@ -343,8 +343,9 @@
         const rolledBackEventCount = transactionEvents.length;
         transactionEvents = [];
         transactionActive = false;
-        transactionId = '';
         emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:rolledBackTransactionId,eventCount:rolledBackEventCount,outcome:'ROLLED_BACK',reason:'callback returned false'});
+        transactionId = '';
+        transactionEvents = previousEvents;
         return null;
       }
       transactionActive = false;
@@ -366,8 +367,8 @@
       const failedEventCount = transactionEvents.length;
       transactionEvents = [];
       transactionActive = false;
-      transactionId = '';
       emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:failedTransactionId,eventCount:failedEventCount,outcome:'ROLLED_BACK',reason:'exception'});
+      transactionId = '';
       transactionEvents = previousEvents;
       return validationError('TRANSACTION_FAILED',error?.message||'Transaction failed');
     }
