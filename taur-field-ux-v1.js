@@ -1,7 +1,8 @@
 /* TAUR FIELD UX V2 — touch-first Job File, exact context, fast contact */
 (()=>{
  const KEY='TAUR_M3CHANICS_FINAL_V1';
- const db=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[]}}catch{return {customers:[],vehicles:[],jobs:[]}}};
+ const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
+ const db=()=>window.TAUR?.data?{customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[],jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[]}:legacyDb();
  const openCustomer=id=>{if(id&&typeof window.taurOpenCustomerTimeline==='function')window.taurOpenCustomerTimeline(id)};
  const openVehicle=id=>{if(id&&typeof window.taurOpenVehicleHistory==='function')window.taurOpenVehicleHistory(id)};
  const callCustomer=phone=>{const p=String(phone||'').trim();if(p)window.location.href='tel:'+p.replace(/[^+\d]/g,'')};
