@@ -5,7 +5,26 @@
  const LS='TAUR_GROWTH_V1',U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';
  let sb=null,bid='',data={leads:[],estimates:[]},tab='leads';
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),money=n=>'$'+Number(n||0).toFixed(2),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
- const load=()=>{try{const x=JSON.parse(localStorage.getItem(LS)||'null');if(x)data={...data,...x}}catch{}};const save=()=>localStorage.setItem(LS,JSON.stringify(data));
+ const load=()=>{
+   try{
+     const x=JSON.parse(localStorage.getItem(LS)||'null');
+     if(x)data={...data,...x};
+   }catch{}
+   if(window.TAUR?.leads?.list && window.TAUR?.estimates?.list){
+     const coreLeads=window.TAUR.leads.list(),coreEstimates=window.TAUR.estimates.list();
+     if(!coreLeads.length && data.leads.length) data.leads.forEach(x=>window.TAUR.leads.create(x));
+     if(!coreEstimates.length && data.estimates.length) data.estimates.forEach(x=>window.TAUR.estimates.create(x));
+     data.leads=window.TAUR.leads.list();
+     data.estimates=window.TAUR.estimates.list();
+   }
+ };
+ const save=()=>{
+   if(window.TAUR?.leads?.list && window.TAUR?.estimates?.list){
+     data.leads=window.TAUR.leads.list();
+     data.estimates=window.TAUR.estimates.list();
+   }
+   localStorage.setItem(LS,JSON.stringify(data));
+ };
  const db=()=>{try{return JSON.parse(localStorage.getItem('TAUR_M3CHANICS_FINAL_V1')||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
  async function cloud(){if(sb&&bid)return true;if(!window.supabase)return false;sb=window.supabase.createClient(U,K);const {data:{session}}=await sb.auth.getSession();if(!session)return false;bid=localStorage.getItem('TAUR_BUSINESS_ID')||'';if(!bid){const r=await sb.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(r.error)return false;bid=r.data;localStorage.setItem('TAUR_BUSINESS_ID',bid)}return true}
  async function pull(){if(!await cloud())return;const local={leads:Array.isArray(data.leads)?data.leads:[],estimates:Array.isArray(data.estimates)?data.estimates:[]};const r=await sb.from('app_records').select('collection,payload').eq('business_id',bid).in('collection',['growth_leads','growth_estimates']);if(r.error)return;(r.data||[]).forEach(x=>{if(x.collection==='growth_leads'&&Array.isArray(x.payload)){const remote=x.payload,seen=new Set(remote.map(v=>v?.id).filter(Boolean));data.leads=remote.concat(local.leads.filter(v=>v?.id&&!seen.has(v.id)))}if(x.collection==='growth_estimates'&&Array.isArray(x.payload)){const remote=x.payload,seen=new Set(remote.map(v=>v?.id).filter(Boolean));data.estimates=remote.concat(local.estimates.filter(v=>v?.id&&!seen.has(v.id)))}});save()}
