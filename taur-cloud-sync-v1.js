@@ -66,10 +66,18 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
        continue;
      }
      const rows=Array.isArray(merged[collection])?merged[collection]:[];
+     const localIds=new Set(rows.filter(r=>r?.id).map(r=>String(r.id)));
      for(const record of rows){
        if(!record?.id)continue;
        const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:String(record.id),payload:record,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});
        if(error)throw error;
+     }
+     const {data:remoteIds,error:remoteIdsError}=await client.from('app_records').select('record_id').eq('business_id',businessId).eq('collection',collection);
+     if(remoteIdsError)throw remoteIdsError;
+     const staleIds=(remoteIds||[]).map(x=>String(x.record_id)).filter(id=>id!==collection&&!localIds.has(id));
+     if(staleIds.length){
+       const {error:staleDeleteError}=await client.from('app_records').delete().eq('business_id',businessId).eq('collection',collection).in('record_id',staleIds);
+       if(staleDeleteError)throw staleDeleteError;
      }
      const {error:legacyDeleteError}=await client.from('app_records').delete().eq('business_id',businessId).eq('collection',collection).eq('record_id',collection);
      if(legacyDeleteError)throw legacyDeleteError;
