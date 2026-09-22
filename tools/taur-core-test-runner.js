@@ -131,6 +131,18 @@ const exceptionEvents=sandbox.window.TAUR.events.history().slice(exceptionStart)
 const exceptionRollback=exceptionEvents.find(e=>e.type==='TRANSACTION_ROLLED_BACK');
 assert(exceptionRollback?.detail?.reason==='exception','Exception rollback should identify exception reason');
 assert(sandbox.window.TAUR.transaction(()=>true)===true,'Transaction state should be clean after exception rollback');
+let nestedRejected=false;
+const outerResult=sandbox.window.TAUR.transaction(()=>{
+  const nested=sandbox.window.TAUR.transaction(()=>true);
+  nestedRejected=(nested===null);
+  assert(nestedRejected,'Nested transaction should be rejected');
+  assert(sandbox.window.TAUR.customers.create({id:'__TX_NESTED_OUTER__',name:'Nested Outer'}),'Outer transaction should remain usable');
+  return true;
+});
+assert(outerResult,'Outer transaction should commit after nested rejection');
+assert(sandbox.window.TAUR.customers.get('__TX_NESTED_OUTER__'),'Outer transaction write should survive nested rejection');
+assert(sandbox.window.TAUR.transaction(()=>true)===true,'Transaction state should be clean after nested rejection');
+
 
 
 sandbox.window.TAUR.events.clear();
