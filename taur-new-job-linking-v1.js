@@ -1,6 +1,6 @@
 /* TAUR NEW JOB LINKING V2 — exact customer/vehicle IDs + direct Job File handoff */
 (()=>{
- const KEY='TAUR_M3CHANICS_FINAL_V1',read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[]}}catch{return {customers:[],vehicles:[],jobs:[]}}},write=d=>localStorage.setItem(KEY,JSON.stringify(d));
+ const core=()=>window.TAUR||null,read=()=>{const t=core();return {customers:t?.customers?.list?.()||[],vehicles:t?.vehicles?.list?.()||[],jobs:t?.jobs?.list?.()||[]}};
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const label=v=>[v.year,v.make,v.model].filter(Boolean).join(' ')||'Vehicle';
  function inject(){
@@ -22,9 +22,7 @@
    setTimeout(()=>{
     const d2=read(),created=(d2.jobs||[]).filter(j=>!before.has(j.id));
     const j=created[created.length-1];if(!j)return;
-    if(cid)j.customerId=cid;
-    if(vid&&d2.vehicles.some(v=>v.id===vid&&v.customerId===cid))j.vehicleId=vid;
-    j.updated=new Date().toISOString();write(d2);
+    if(cid){const patch={customerId:cid,updated:new Date().toISOString()};if(vid&&d2.vehicles.some(v=>v.id===vid&&v.customerId===cid))patch.vehicleId=vid;const updated=core()?.jobs?.update?.(j.id,patch);if(core()?.jobs?.update&&!updated){alert('TAUR Data Core rejected the job links.');return;}}
     if(typeof render==='function')render();
     setTimeout(()=>{if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(j.id)},0);
    },40);
