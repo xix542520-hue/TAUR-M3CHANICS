@@ -57,4 +57,4 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
  };
  return {newerRecord,mergeRecords,compareRecordState,buildReconciliationPlan,applyTombstones};
 })();
-window.TAUR_CLOUD_RECONCILIATION=TAUR_CLOUD_RECONCILIATION;
+globalThis.TAUR_CLOUD_RECONCILIATION=TAUR_CLOUD_RECONCILIATION;
