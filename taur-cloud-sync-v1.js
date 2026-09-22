@@ -50,32 +50,24 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    }
    return Object.assign(merged,applyTombstones(merged));
  }
-  const db=mergeRemoteRowsIntoLocal(localDb()||{},data||[]);
- let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
- const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
- db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);async function loadRemote(){loadingRemote=true;try{const before=localDb();if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);if(error)throw error;const db=localDb()||{};let growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
- const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
- 
- for(const r of data||[]){
-   if(!COLLECTIONS.includes(r.collection)&&!LEGACY_GROWTH_COLLECTIONS.includes(r.collection))continue;
-   if(r.collection.startsWith('growth_')){
-     const k=r.collection.replace('growth_','');
-     legacyGrowth[k]=mergeRecords(legacyGrowth[k],Array.isArray(r.payload)?r.payload:[]);
-     continue;
-   }
-   if(Array.isArray(r.payload)){
-     const remoteRecords=r.payload.map(record=>({...record,...(!record?.updated&&r.updated_at?{updated:r.updated_at}:{})}));
-     db[r.collection]=mergeRecords(db[r.collection],remoteRecords);
-   }else if(r.collection==='settings'){
-     db.settings={...(db.settings||{}),...(r.payload||{}),...((!r.payload?.updated&&r.updated_at)?{updated:r.updated_at}:{})};
-   }else if(r.payload&&typeof r.payload==='object'){
-     const remoteRecord={...r.payload,...(!r.payload.updated&&r.updated_at?{updated:r.updated_at}:{})};
-     db[r.collection]=mergeRecords(db[r.collection],[remoteRecord]);
-   }
+ async function loadRemote(){
+  loadingRemote=true;
+  try{
+   const before=localDb();
+   if(before)localStorage.setItem('TAUR_LOCAL_BACKUP_V1',JSON.stringify({savedAt:new Date().toISOString(),data:before}));
+   const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
+   if(error)throw error;
+   const db=mergeRemoteRowsIntoLocal(localDb()||{},data||[]);
+   const growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
+   const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
+   db.leads=mergeRecords(db.leads,legacyGrowth.leads);
+   db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
+   localSave(db);
+   if(typeof window.taurSetDb==='function')window.taurSetDb(db);
+   localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));
+   if(typeof window.render==='function')window.render();
+  }finally{loadingRemote=false}
  }
- db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
- Object.assign(db,applyTombstones(db));
- localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}}
  window.taurCloudDiagnostics=()=>({remoteReady,businessId:!!businessId,syncing,loadingRemote,lastReconciliationPlan:lastReconciliationPlan?JSON.parse(JSON.stringify(lastReconciliationPlan)):null});
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
    const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   if(remoteError)throw remoteError;
