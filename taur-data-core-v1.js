@@ -109,8 +109,11 @@
       created: now(),
       updated: now()
     }, data || {});
+    const collection = ensureCollection(name);
+    if(collection.some(x => x && x.id === record.id))
+      return validationError('DUPLICATE_ID','Record id already exists',{collection:name,id:record.id});
     if(!validateRelationships(name,record,record.id)) return null;
-    ensureCollection(name).push(record);
+    collection.push(record);
     saveDb();
     emit(name.toUpperCase() + '_CREATED', record);
     return record;
