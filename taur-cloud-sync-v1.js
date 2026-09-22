@@ -67,7 +67,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const staleByCollection={};
    for(const collection of COLLECTIONS){
      if(collection==='settings'){
-       const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload:(merged.settings||{}),updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});
+       const {error}=await client.from('app_records').upsert({business_id:businessId,collection,record_id:collection,payload:(merged.settings||{}),updated_at:(merged.settings?.updated||merged.settings?.created||new Date().toISOString())},{onConflict:'business_id,collection,record_id'});
        if(error)throw error;
        continue;
      }
@@ -75,7 +75,6 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      const localIds=new Set(rows.filter(r=>r?.id).map(r=>String(r.id)));
      const planCollection=reconciliationPlan.collections[collection]||{actions:{},ids:{create:[],update:[],keep:[],delete:[]}};
      const writeIds=new Set([...(planCollection.ids?.create||[]),...(planCollection.ids?.update||[])].map(String));
-     const syncTimestamp=new Date().toISOString();
      const payloadRows=rows.filter(record=>{
        if(!record?.id)return false;
        return writeIds.has(String(record.id));
@@ -84,7 +83,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
        collection,
        record_id:String(record.id),
        payload:record,
-       updated_at:syncTimestamp
+       updated_at:(record.updated||record.created||new Date().toISOString())
      }));
      if(payloadRows.length){
        const {error}=await client.from('app_records').upsert(payloadRows,{onConflict:'business_id,collection,record_id'});
