@@ -3,7 +3,7 @@
  const SUPABASE_URL='https://pgvicmzjrrqimwftftuj.supabase.co',SUPABASE_KEY='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h',KEY='TAUR_M3CHANICS_FINAL_V1';
  const COLLECTIONS=['customers','vehicles','jobs','quotes','payments','parts','pricing','tools','research','settings','leads','estimates','partners','referrals','tombstones'];
  const LEGACY_GROWTH_COLLECTIONS=['growth_leads','growth_estimates'];
- let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null,coreSyncTimer=null,coreSyncBound=false;
+ let client=null,businessId=localStorage.getItem('TAUR_BUSINESS_ID')||'',timer=null,remoteReady=false,syncing=false,loadingRemote=false,channel=null,coreSyncTimer=null,coreSyncBound=false,coreSyncQueued=false;
 let lastReconciliationPlan=null;
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const legacyLocalDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
@@ -14,13 +14,13 @@ let lastReconciliationPlan=null;
  const applyTombstones=TAUR_CLOUD_RECONCILIATION.applyTombstones;
  const buildReconciliationPlan=(local,remoteRows)=>TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(local,remoteRows,COLLECTIONS);
  const compareRecordState=TAUR_CLOUD_RECONCILIATION.compareRecordState;
- const buildReconciliationPlan=(local,remoteRows)=>TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(local,remoteRows,COLLECTIONS);
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  function scheduleCoreSync(){
   if(!remoteReady||loadingRemote||!client||!businessId)return;
+  if(syncing){coreSyncQueued=true;return}
   clearTimeout(coreSyncTimer);
-  coreSyncTimer=setTimeout(()=>{syncNow()},350);
+  coreSyncTimer=setTimeout(()=>{coreSyncTimer=null;syncNow()},350);
 }
 function bindCoreSync(){
   if(coreSyncBound||!window.TAUR?.on)return;
@@ -101,7 +101,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      if(legacyDeleteError)throw legacyDeleteError;
    }
    remoteReady=true;statusBar(true,'SYNCED');return true;
- }catch(e){console.error(e);toast('Cloud sync failed: '+(e.message||e));return false}finally{syncing=false}}
+ }catch(e){console.error(e);toast('Cloud sync failed: '+(e.message||e));return false}finally{syncing=false;if(coreSyncQueued){coreSyncQueued=false;scheduleCoreSync()}}}
  async function migrateLocal(){if(!client||!businessId)return;const db=localDb();if(!db)return;const {data,error}=await client.from('app_records').select('collection').eq('business_id',businessId).limit(1);if(error)return toast('Could not check cloud: '+error.message);if((data||[]).length&&!confirm('Cloud data already exists. Replace it with this device\'s current data?'))return;if(await syncNow()){toast('Local TAUR data uploaded to shared cloud',true);openPanel()}}
  function openPanel(){const p=document.getElementById('taurCloudPanel');if(p)p.remove();const w=document.createElement('div');w.id='taurCloudPanel';w.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.86);display:flex;align-items:flex-end;justify-content:center';w.innerHTML='<div id="taurCloudCard" style="width:100%;max-width:620px;max-height:94vh;overflow:auto;background:#101010;border:1px solid #333;border-radius:18px 18px 0 0;padding:16px 14px 24px"><div class="row"><div><h2>TAUR CLOUD</h2><div id="taurCloudStatus">Checking connection…</div></div><button class="secondary" id="tcClose">CLOSE</button></div><div id="tcBody"></div></div>';document.body.appendChild(w);w.querySelector('#tcClose').onclick=()=>w.remove();w.addEventListener('click',e=>{if(e.target===w)w.remove()});renderPanelBody()}
  async function renderPanelBody(){const body=document.getElementById('tcBody');if(!body)return;const {data:{session}}=await client.auth.getSession();if(!session){body.innerHTML='<div class="muted">Sign in to the TAUR business account.</div><label>EMAIL</label><input id="tcEmail" type="email"><label>PASSWORD</label><input id="tcPass" type="password"><button id="tcSignIn">SIGN IN</button><button class="secondary" id="tcSignUp">CREATE ACCOUNT</button>';tcSignIn.onclick=()=>auth(false);tcSignUp.onclick=()=>auth(true);return}const {data:members}=await client.from('business_members').select('user_id,role,created_at').eq('business_id',businessId);const isAdmin=(members||[]).some(m=>m.user_id===session.user.id&&['owner','admin','partner'].includes(m.role));body.innerHTML='<div class="taur-cloud-user"><b>'+esc(session.user.email||'')+'</b><br>BUSINESS: TAUR M3CHANICS<br>STATUS: '+(remoteReady?'SYNCED':'CONNECTING')+'</div><button id="tcSync">SYNC NOW</button><button class="secondary" id="tcMigrate">UPLOAD THIS DEVICE</button>'+(isAdmin?'<button class="secondary" id="tcInvite">INVITE / ADD PARTNER</button>':'')+'<button class="danger" id="tcOut">SIGN OUT</button>';tcSync.onclick=async()=>{if(await syncNow())toast('Cloud sync complete',true);renderPanelBody()};tcMigrate.onclick=migrateLocal;tcOut.onclick=signOut;if(isAdmin)tcInvite.onclick=invite}
