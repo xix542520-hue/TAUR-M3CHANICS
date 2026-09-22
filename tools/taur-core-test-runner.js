@@ -88,4 +88,28 @@ const diagnostic=sandbox.window.TAUR.diagnostics.lastError();
 assert(diagnostic&&diagnostic.code,'Rejected writes must produce a structured diagnostic');
 assert(sandbox.window.TAUR.diagnostics.errors().length===diagnosticsBefore+1,'Diagnostic history should record each rejected write');
 assert(sandbox.window.TAUR.diagnostics.clearErrors()===true&&sandbox.window.TAUR.diagnostics.errors().length===0,'Diagnostics should be clearable for test isolation');
+
+const txStart=sandbox.window.TAUR.events.history().length;
+const txResult=sandbox.window.TAUR.transaction(()=>{
+  const created=sandbox.window.TAUR.customers.create({id:'__TX_CUSTOMER__',name:'Transaction Test'});
+  assert(created,'Transaction test customer should be created');
+  assert(sandbox.window.TAUR.customers.update('__TX_CUSTOMER__',{notes:'atomic'}),'Transaction update should succeed');
+  return true;
+});
+assert(txResult,'Transaction ID regression: commit failed');
+const txEvents=sandbox.window.TAUR.events.history().slice(txStart);
+const txTagged=txEvents.filter(e=>e.transactionId);
+assert(txTagged.length>=2,'Transaction child events should be tagged');
+assert(new Set(txTagged.map(e=>e.transactionId)).size===1,'Transaction events should share one ID');
+assert(txTagged.some(e=>e.type==='TRANSACTION_COMMITTED'),'Commit event should be tagged');
+
+const rollbackStart=sandbox.window.TAUR.events.history().length;
+assert(sandbox.window.TAUR.transaction(()=>{
+  sandbox.window.TAUR.customers.create({id:'__TX_ROLLBACK__',name:'Rollback Test'});
+  return false;
+})===null,'False transaction should roll back');
+assert(!sandbox.window.TAUR.customers.get('__TX_ROLLBACK__'),'Rolled-back record must not survive');
+const rollbackEvents=sandbox.window.TAUR.events.history().slice(rollbackStart);
+assert(rollbackEvents.some(e=>e.type==='TRANSACTION_ROLLED_BACK'),'Rollback event should be recorded');
+assert(!rollbackEvents.some(e=>e.type==='CUSTOMER_CREATED'),'Rolled-back entity events must not leak');
 console.log('PASS — Data Core self-tests:',result.results.length);
