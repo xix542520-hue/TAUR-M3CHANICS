@@ -50,6 +50,18 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    }
    return Object.assign(merged,applyTombstones(merged));
  }
+ function migrateLegacyGrowthToCore(db){
+   const raw=localStorage.getItem('TAUR_GROWTH_V1');
+   if(!raw)return db;
+   let growth;
+   try{growth=JSON.parse(raw)}catch{return db}
+   const legacyLeads=Array.isArray(growth?.leads)?growth.leads:[];
+   const legacyEstimates=Array.isArray(growth?.estimates)?growth.estimates:[];
+   if(legacyLeads.length)db.leads=mergeRecords(db.leads,legacyLeads);
+   if(legacyEstimates.length)db.estimates=mergeRecords(db.estimates,legacyEstimates);
+   localStorage.setItem('TAUR_GROWTH_V1_MIGRATED_AT',new Date().toISOString());
+   return db;
+ }
  async function loadRemote(){
   loadingRemote=true;
   try{
@@ -58,13 +70,10 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const {data,error}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
    if(error)throw error;
    const db=mergeRemoteRowsIntoLocal(localDb()||{},data||[]);
-   const growth=JSON.parse(localStorage.getItem('TAUR_GROWTH_V1')||'{"leads":[],"estimates":[]}');
-   const legacyGrowth={leads:Array.isArray(growth.leads)?growth.leads:[],estimates:Array.isArray(growth.estimates)?growth.estimates:[]};
-   db.leads=mergeRecords(db.leads,legacyGrowth.leads);
-   db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
+   migrateLegacyGrowthToCore(db);
    localSave(db);
    if(typeof window.taurSetDb==='function')window.taurSetDb(db);
-   localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));
+   localStorage.removeItem('TAUR_GROWTH_V1');
    if(typeof window.render==='function')window.render();
   }finally{loadingRemote=false}
  }
