@@ -1,7 +1,8 @@
 /* TAUR HOME COMMAND CENTER V2 — field-first home snapshot */
 (()=>{
  const KEY='TAUR_M3CHANICS_FINAL_V1',money=n=>'$'+Number(n||0).toFixed(2),esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
- const db=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
+ const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
+ const db=()=>window.TAUR?.data?{customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[],jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[]}:legacyDb();
  const base=p=>Number(p?.baseAmount??(p?.tip!=null?Number(p?.amount||0)-Number(p.tip||0):p?.amount??0)),tip=p=>Number(p?.tip??0);
  const today=()=>new Date().toISOString().slice(0,10);
  const jobRevenue=(j,d)=>(d.payments||[]).filter(p=>p.jobId===j.id).reduce((s,p)=>s+Math.max(0,base(p)),0);
