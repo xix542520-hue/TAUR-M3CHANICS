@@ -1,7 +1,8 @@
 /* TAUR CUSTOMER TIMELINE V2 — ID-native customer → vehicle → job history */
 (()=>{
  const KEY='TAUR_M3CHANICS_FINAL_V1',esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),money=n=>'$'+Number(n||0).toFixed(2);
- const db=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
+ const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
+ const db=()=>window.TAUR?.data?{customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[],jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[]}:legacyDb();
  const base=p=>Number(p?.baseAmount??p?.amount??0),tip=p=>Number(p?.tip??0),date=x=>String(x||'').slice(0,10)||'—';
  const openJob=id=>id&&(typeof window.taurXipOpenJobFile==='function'?window.taurXipOpenJobFile(id):window.jobFile?.(id));
  const openVehicle=id=>id&&window.taurOpenVehicleHistory?.(id);
