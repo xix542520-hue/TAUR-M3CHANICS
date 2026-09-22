@@ -16,3 +16,5 @@ jobs:
         run: node tools/taur-cloud-reconciliation-test.js
       - name: Cloud contract tests
         run: node tools/taur-cloud-contract-test.js
+      - name: Architecture lint
+        run: node tools/taur-architecture-lint.js
