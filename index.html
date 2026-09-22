@@ -49,7 +49,7 @@ function render(){nav();let a=$("app");({home,customers,vehicles,jobs,detail,mec
 function nav(){let xs=[["home","HOME"],["jobs","JOBS"],["mechanic","MECHANIC"],["detail","DETAIL"],["customers","CUSTOMERS"],["vehicles","VEHICLES"],["more","SYSTEM"]];$("nav").innerHTML=xs.map(x=>`<button class="${view===x[0]?'active':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
 function go(v){view=v;render()}
 function money(n){return "$"+Number(n||0).toFixed(2)}
-function jobPaid(id){return db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)}
+function jobPaid(id){return window.TAUR?.payments?.baseForJob?.(id) ?? db.payments.filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)}
 function jobBalance(id){let j=J(id);return Math.max(0,Number(j?.total||0)-jobPaid(id))}
 function jobName(j){return `${esc(j.title||"Untitled Job")}`}
 function vehicleName(v){return v?`${esc(v.year)} ${esc(v.make)} ${esc(v.model)}`:"No vehicle"}
