@@ -41,12 +41,18 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      legacyGrowth[k]=mergeRecords(legacyGrowth[k],Array.isArray(r.payload)?r.payload:[]);
      continue;
    }
-   if(Array.isArray(r.payload)) db[r.collection]=mergeRecords(db[r.collection],r.payload);
-   else if(r.collection==='settings') db.settings={...(db.settings||{}),...(r.payload||{})};
-   else db[r.collection]=r.payload;
+   if(Array.isArray(r.payload)){
+     const remoteRecords=r.payload.map(record=>({...record,...(!record?.updated&&r.updated_at?{updated:r.updated_at}:{})}));
+     db[r.collection]=mergeRecords(db[r.collection],remoteRecords);
+   }else if(r.collection==='settings'){
+     db.settings={...(db.settings||{}),...(r.payload||{}),...((!r.payload?.updated&&r.updated_at)?{updated:r.updated_at}:{})};
+   }else if(r.payload&&typeof r.payload==='object'){
+     const remoteRecord={...r.payload,...(!r.payload.updated&&r.updated_at?{updated:r.updated_at}:{})};
+     db[r.collection]=mergeRecords(db[r.collection],[remoteRecord]);
+   }
  }
  db.leads=mergeRecords(db.leads,legacyGrowth.leads); db.estimates=mergeRecords(db.estimates,legacyGrowth.estimates);
- applyTombstones(db);
+ Object.assign(db,applyTombstones(db));
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  window.taurCloudDiagnostics=()=>({remoteReady,businessId:!!businessId,syncing,loadingRemote,lastReconciliationPlan:lastReconciliationPlan?JSON.parse(JSON.stringify(lastReconciliationPlan)):null});
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
