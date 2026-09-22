@@ -263,6 +263,11 @@
   };
 
   root.version = '1.0.0';
+  const tombstones = {
+    get: id => find('tombstones', id),
+    list: () => ensureCollection('tombstones')
+  };
+
   root.data = {
     get db(){ return currentDb(); },
     customers,
@@ -275,6 +280,7 @@
     referrals,
     leads,
     estimates,
+    tombstones,
     refresh: () => currentDb()
   };
 
