@@ -52,7 +52,18 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
   } return plan;
  };
  const applyTombstones=(db)=>{
-  const tombstones=Array.isArray(db?.tombstones)?db.tombstones:[];
+  const rawTombstones=Array.isArray(db?.tombstones)?db.tombstones:[];
+  const tombstoneMap=new Map();
+  for(const t of rawTombstones){
+   if(!t?.collection||!t?.recordId)continue;
+   const key=String(t.collection)+'::'+String(t.recordId),existing=tombstoneMap.get(key);
+   if(!existing)tombstoneMap.set(key,t);
+   else{
+    const et=Date.parse(existing.deletedAt||0)||0,tt=Date.parse(t.deletedAt||0)||0;
+    if(tt>et||(tt===et&&stableStringify(t)>stableStringify(existing)))tombstoneMap.set(key,t);
+   }
+  }
+  const tombstones=[...tombstoneMap.values()];
   const next={...db};
   for(const t of tombstones){
    if(!t?.collection||!t?.recordId||!Array.isArray(next[t.collection]))continue;
