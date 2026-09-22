@@ -62,26 +62,6 @@
     const nextStage=w.querySelector('#eStage').value,nextStatus=w.querySelector('#eStatus').value,nextType=typeEl.value;
     if(nextType==='DETAILING'&&(nextStage==='COMPLETE'||nextStatus==='COMPLETE')){const gate=detailQcGate({...j,type:nextType});if(!gate.ok)return alert(gate.reason+'. Use VERIFY FINAL QC before completing this detail job.')}
     const selected=j.__editPackageSelection;
-    j.customerId=w.querySelector('#eCustomer').value;
-    j.vehicleId=w.querySelector('#eVehicle').value;
-    j.type=nextType;
-    j.title=w.querySelector('#eTitle').value.trim()||'Untitled Job';
-    j.stage=nextStage;j.status=nextStatus;
-    j.total=Math.max(0,Number(w.querySelector('#eTotal').value||0));
-    j.laborHours=Math.max(0,Number(w.querySelector('#eHours').value||0));
-    j.materialsCost=Math.max(0,Number(w.querySelector('#eMaterials').value||0));
-    j.complaint=w.querySelector('#eNotes').value.trim();
-    j.followUpDate=w.querySelector('#eFollow').value;
-    j.condition=w.querySelector('#eCondition').value;
-    j.vehicleSize=w.querySelector('#eSize').value;
-    j.leadSource=w.querySelector('#eLead').value;
-    if(Array.isArray(selected)){
-      j.priceBookSelections=selected.map(x=>({id:x.id,name:x.name,price:Number(x.price||0),type:x.type}));
-      j.addOns=j.priceBookSelections.slice();
-    }else if(nextType!==type){
-      j.priceBookSelections=[];
-      j.addOns=[];
-    }
     const patch={
       customerId:w.querySelector('#eCustomer').value,
       vehicleId:w.querySelector('#eVehicle').value,
