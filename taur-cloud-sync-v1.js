@@ -73,15 +73,12 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
      }
      const rows=Array.isArray(merged[collection])?merged[collection]:[];
      const localIds=new Set(rows.filter(r=>r?.id).map(r=>String(r.id)));
-     const actions=reconciliationPlan.collections[collection]?.actions||{};
-     const remoteById=new Map((remoteRows||[]).filter(row=>row.collection===collection&&String(row.record_id)!==collection).map(row=>[String(row.record_id),row]));
+     const planCollection=reconciliationPlan.collections[collection]||{actions:{},ids:{create:[],update:[],keep:[],delete:[]}};
+     const writeIds=new Set([...(planCollection.ids?.create||[]),...(planCollection.ids?.update||[])].map(String));
      const syncTimestamp=new Date().toISOString();
      const payloadRows=rows.filter(record=>{
        if(!record?.id)return false;
-       const id=String(record.id);
-       if(!remoteById.has(id))return true;
-       const remote=remoteById.get(id);
-       return compareRecordState(record,remote)==='UPDATE';
+       return writeIds.has(String(record.id));
      }).map(record=>({
        business_id:businessId,
        collection,
@@ -93,8 +90,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
        const {error}=await client.from('app_records').upsert(payloadRows,{onConflict:'business_id,collection,record_id'});
        if(error)throw error;
      }
-     const remoteIds=(remoteRows||[]).filter(row=>row.collection===collection).map(row=>String(row.record_id));
-     const staleIds=remoteIds.filter(id=>id!==collection&&!localIds.has(id));
+     const staleIds=(planCollection.ids?.delete||[]).filter(id=>id!==collection).map(String);
      if(staleIds.length)staleByCollection[collection]=staleIds;
    }
    for(const [collection,ids] of Object.entries(staleByCollection)){
