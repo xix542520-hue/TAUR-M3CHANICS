@@ -66,4 +66,16 @@ const quotePayment=sandbox.window.TAUR.payments.create({jobId:quoteJob.id,baseAm
 assert(quotePayment,'Quote-backed job payment should be accepted');
 assert(sandbox.window.TAUR.jobs.balance(quoteJob.id)===0,'Accepted quote should be fully collectible against job base total');
 assert(sandbox.window.TAUR.payments.tipsForJob(quoteJob.id)===25,'Quote-backed payment tip remains separate from quote/job balance');
+const relA=sandbox.window.TAUR.customers.create({name:'__REL_A__'});
+const relB=sandbox.window.TAUR.customers.create({name:'__REL_B__'});
+const relVehicle=sandbox.window.TAUR.vehicles.create({customerId:relA.id,year:2006,make:'Honda',model:'Accord'});
+assert(relVehicle,'Vehicle should attach to its customer');
+const relJob=sandbox.window.TAUR.jobs.create({customerId:relA.id,vehicleId:relVehicle.id,title:'Relationship Test',type:'MECHANICS',total:40});
+assert(relJob,'Job should accept matching customer and vehicle');
+const mismatchVehicle=sandbox.window.TAUR.vehicles.create({customerId:relB.id,year:2010,make:'Ford',model:'Fusion'});
+assert(mismatchVehicle,'Second customer vehicle should exist');
+assert(sandbox.window.TAUR.jobs.create({customerId:relA.id,vehicleId:mismatchVehicle.id,title:'Bad Vehicle Link',type:'MECHANICS',total:40})===null,'Job must reject vehicle belonging to another customer');
+assert(sandbox.window.TAUR.vehicles.update(relVehicle.id,{customerId:relB.id})===null,'Vehicle reassignment must reject linked cross-customer relationship');
+assert(sandbox.window.TAUR.customers.remove(relA.id)===null,'Customer deletion must be blocked by linked vehicle/job history');
+assert(sandbox.window.TAUR.vehicles.remove(relVehicle.id)===null,'Vehicle deletion must be blocked by linked job history');
 console.log('PASS — Data Core self-tests:',result.results.length);
