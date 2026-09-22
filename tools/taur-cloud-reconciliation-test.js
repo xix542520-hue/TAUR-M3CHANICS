@@ -33,6 +33,7 @@ check('mergeRecords → duplicates resolve and distinct records survive',()=>{as
 
 const stale={customers:[{id:'cust-1',updated:'2026-01-01T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 check('newer tombstone removes stale record',()=>assert.strictEqual(reconciliation.applyTombstones(stale).customers.length,0));
+check('applyTombstones is non-mutating',()=>{const input=JSON.parse(JSON.stringify(recreation));reconciliation.applyTombstones(input);assert.deepStrictEqual(input,recreation)});
 const recreation={customers:[{id:'cust-1',updated:'2026-01-03T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 check('newer recreation survives and clears tombstone',()=>{const out=reconciliation.applyTombstones(recreation);assert.strictEqual(out.customers.length,1);assert.strictEqual(out.tombstones.length,0)});
 
