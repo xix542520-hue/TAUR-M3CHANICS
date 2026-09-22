@@ -285,6 +285,31 @@
     return saveDb();
   };
 
+  root.transaction = function(work){
+    if(typeof work !== 'function') return validationError('INVALID_TRANSACTION','Transaction callback must be a function');
+    const snapshot = JSON.stringify(db);
+    try{
+      const result = work();
+      if(result === false){
+        const restored = JSON.parse(snapshot);
+        Object.keys(db).forEach(k=>delete db[k]);
+        Object.assign(db,restored);
+        return null;
+      }
+      saveDb();
+      emit('TRANSACTION_COMMITTED',{at:now()});
+      return result;
+    }catch(error){
+      try{
+        const restored = JSON.parse(snapshot);
+        Object.keys(db).forEach(k=>delete db[k]);
+        Object.assign(db,restored);
+        saveDb();
+      }catch(rollbackError){ console.error('[TAUR DATA] rollback failed',rollbackError); }
+      return validationError('TRANSACTION_FAILED',error?.message||'Transaction failed');
+    }
+  };
+
   root.storage = {
     key: (typeof KEY !== 'undefined' ? KEY : 'TAUR_M3CHANICS_FINAL_V1'),
     save: saveDb
