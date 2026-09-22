@@ -1,4 +1,6 @@
 const TAUR_CLOUD_RECONCILIATION=(function(){
+ const newerRecord=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;return tb>ta?b:a};
+ const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const compareRecordState=(localRecord,remoteRow)=>{
   const localPayload=localRecord||{},remotePayload=remoteRow?.payload||{};
   if(JSON.stringify(localPayload)===JSON.stringify(remotePayload))return 'KEEP';
@@ -53,6 +55,6 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
   });
   return next;
  };
- return {compareRecordState,buildReconciliationPlan,applyTombstones};
+ return {newerRecord,mergeRecords,compareRecordState,buildReconciliationPlan,applyTombstones};
 })();
 window.TAUR_CLOUD_RECONCILIATION=TAUR_CLOUD_RECONCILIATION;
