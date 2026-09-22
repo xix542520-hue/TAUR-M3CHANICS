@@ -75,6 +75,14 @@ check('newer tombstone removes stale record',()=>assert.strictEqual(reconciliati
 check('applyTombstones is non-mutating',()=>{const input=JSON.parse(JSON.stringify(recreation));reconciliation.applyTombstones(input);assert.deepStrictEqual(input,recreation)});
 const recreation={customers:[{id:'cust-1',updated:'2026-01-03T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 check('newer recreation survives and clears tombstone',()=>{const out=reconciliation.applyTombstones(recreation);assert.strictEqual(out.customers.length,1);assert.strictEqual(out.tombstones.length,0)});
+const equalTombstoneRecord={id:'cust-tie',updated:'2026-01-02T00:00:00.000Z',a:1,b:2};
+const equalTombstone={customers:[equalTombstoneRecord],tombstones:[{collection:'customers',recordId:'cust-tie',deletedAt:'2026-01-02T00:00:00.000Z',b:2,a:1}]};
+check('equal-time tombstone resolution is deterministic',()=>{
+  const first=reconciliation.applyTombstones(equalTombstone);
+  const second=reconciliation.applyTombstones(JSON.parse(JSON.stringify(equalTombstone)));
+  assert.deepStrictEqual(first,second);
+});
+
 
 console.log('PASS — Cloud reconciliation behavioral tests');
 cases.forEach((name,i)=>console.log('  '+(i+1)+'. '+name));
