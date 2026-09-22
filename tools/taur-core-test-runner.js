@@ -104,6 +104,10 @@ assert(new Set(txTagged.map(e=>e.transactionId)).size===1,'Transaction events sh
 assert(txTagged.some(e=>e.type==='TRANSACTION_COMMITTED'),'Commit event should be tagged');
 assert(txEvents[txEvents.length-1]?.type==='TRANSACTION_COMMITTED','Commit event should be the final event in a successful transaction');
 assert(txEvents[txEvents.length-1]?.transactionId===txTagged[0]?.transactionId,'Final commit event should retain the transaction ID');
+const txCommit=txEvents[txEvents.length-1];
+assert(txCommit?.detail?.outcome==='COMMITTED','Commit lifecycle event should declare COMMITTED outcome');
+assert(typeof txCommit?.detail?.eventCount==='number','Commit lifecycle event should declare eventCount');
+assert(txCommit.detail.eventCount>=2,'Commit eventCount should include buffered child events');
 
 const rollbackStart=sandbox.window.TAUR.events.history().length;
 assert(sandbox.window.TAUR.transaction(()=>{
@@ -113,6 +117,9 @@ assert(sandbox.window.TAUR.transaction(()=>{
 assert(!sandbox.window.TAUR.customers.get('__TX_ROLLBACK__'),'Rolled-back record must not survive');
 const rollbackEvents=sandbox.window.TAUR.events.history().slice(rollbackStart);
 assert(rollbackEvents.some(e=>e.type==='TRANSACTION_ROLLED_BACK'),'Rollback event should be recorded');
+const rollbackLifecycle=rollbackEvents.find(e=>e.type==='TRANSACTION_ROLLED_BACK');
+assert(rollbackLifecycle?.detail?.outcome==='ROLLED_BACK','Rollback lifecycle event should declare ROLLED_BACK outcome');
+assert(typeof rollbackLifecycle?.detail?.eventCount==='number','Rollback lifecycle event should declare eventCount');
 assert(!rollbackEvents.some(e=>e.type==='CUSTOMER_CREATED'),'Rolled-back entity events must not leak');
 
 sandbox.window.TAUR.events.clear();
