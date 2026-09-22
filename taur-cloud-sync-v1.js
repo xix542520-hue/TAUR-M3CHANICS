@@ -10,6 +10,7 @@
  const localSave=db=>{if(typeof window.taurSetDb==='function')window.taurSetDb(db);else localStorage.setItem(KEY,JSON.stringify(db))};
  const newerRecord=(a,b)=>{const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;return tb>ta?b:a};
  const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
+ const applyTombstones=db=>{const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];for(const t of tombstones){if(!t?.collection||!t?.recordId)continue;if(!Array.isArray(db[t.collection]))continue;const deletedAt=Date.parse(t.deletedAt||0)||0;db[t.collection]=db[t.collection].filter(x=>{if(x?.id!==t.recordId)return true;const updatedAt=Date.parse(x.updated||x.created||0)||0;return updatedAt>deletedAt})}db.tombstones=tombstones.filter(t=>{const record=Array.isArray(db[t?.collection])?db[t.collection].find(x=>x?.id===t.recordId):null;if(!record)return true;const deletedAt=Date.parse(t.deletedAt||0)||0;const updatedAt=Date.parse(record.updated||record.created||0)||0;return updatedAt<=deletedAt});return db};
  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  async function init(){try{await loadSdk();client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const {data:{session}}=await client.auth.getSession();if(session)await signedIn(session);else statusBar(false);client.auth.onAuthStateChange((event,session)=>setTimeout(()=>session?signedIn(session):statusBar(false),0));window.taurCloud={open:openPanel,signOut,sync:syncNow,migrate:migrateLocal,invite};}catch(e){console.error(e);toast('Cloud initialization failed')}}
@@ -30,25 +31,7 @@
    else db[r.collection]=r.payload;
  }
  db.leads=mergeById(db.leads,legacyGrowth.leads); db.estimates=mergeById(db.estimates,legacyGrowth.estimates);
- const tombstones=Array.isArray(db.tombstones)?db.tombstones:[];
- for(const t of tombstones){
-   if(!t?.collection||!t?.recordId)continue;
-   if(!Array.isArray(db[t.collection]))continue;
-   const deletedAt=Date.parse(t.deletedAt||0)||0;
-   db[t.collection]=db[t.collection].filter(x=>{
-     if(x?.id!==t.recordId)return true;
-     const updatedAt=Date.parse(x.updated||x.created||0)||0;
-     return updatedAt>deletedAt;
-   });
- }
- // A record recreated or legitimately updated after deletion supersedes the tombstone.
- db.tombstones=tombstones.filter(t=>{
-   const record=Array.isArray(db[t?.collection])?db[t.collection].find(x=>x?.id===t.recordId):null;
-   if(!record)return true;
-   const deletedAt=Date.parse(t.deletedAt||0)||0;
-   const updatedAt=Date.parse(record.updated||record.created||0)||0;
-   return updatedAt<=deletedAt;
- });
+ applyTombstones(db);
  localSave(db);if(typeof window.taurSetDb==='function')window.taurSetDb(db);localStorage.setItem('TAUR_GROWTH_V1',JSON.stringify({leads:db.leads||[],estimates:db.estimates||[]}));if(typeof window.render==='function')window.render()}finally{loadingRemote=false}}
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
    const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
@@ -101,9 +84,10 @@
    const newer=mergeRecords([a],[{...a,updated:'2026-01-02T00:00:00Z',value:3}]);assert('newer update wins',newer[0].value===3);
    const older=mergeRecords([a],[{...a,updated:'2025-12-01T00:00:00Z',value:9}]);assert('older update loses',older[0].value===1);
    const tomb={id:'customers:a',collection:'customers',recordId:'a',deletedAt:'2026-01-03T00:00:00Z'};
-   const recreated={id:'a',updated:'2026-01-04T00:00:00Z',value:4};
-   const tMerged=mergeRecords([tomb],[recreated]);assert('newer recreation beats older tombstone',tMerged.some(x=>x.id==='a'&&x.value===4));
-   const staleRecreate=mergeRecords([tomb],[{...recreated,updated:'2026-01-02T00:00:00Z'}]);assert('newer tombstone beats stale recreation',staleRecreate.some(x=>x.id==='customers:a'));
+   const freshDb={customers:[{id:'a',updated:'2026-01-04T00:00:00Z',value:4}],tombstones:[tomb]};
+   applyTombstones(freshDb);assert('newer recreation beats tombstone',freshDb.customers.some(x=>x.id==='a')&&!freshDb.tombstones.some(x=>x.id===tomb.id));
+   const staleDb={customers:[{id:'a',updated:'2026-01-02T00:00:00Z',value:9}],tombstones:[tomb]};
+   applyTombstones(staleDb);assert('tombstone removes stale recreation',!staleDb.customers.some(x=>x.id==='a')&&staleDb.tombstones.some(x=>x.id===tomb.id));
    return {ok:results.every(x=>x.pass),results};
  }};
  if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='TOMBSTONE_CREATED'||e.type==='DATA_SAVED')queue()});}
