@@ -339,9 +339,12 @@
         const restored = JSON.parse(snapshot);
         Object.keys(db).forEach(k=>delete db[k]);
         Object.assign(db,restored);
+        const rolledBackTransactionId = transactionId;
+        const rolledBackEventCount = transactionEvents.length;
         transactionEvents = [];
         transactionActive = false;
         transactionId = '';
+        emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:rolledBackTransactionId,eventCount:rolledBackEventCount,reason:'callback returned false'});
         return null;
       }
       transactionActive = false;
@@ -358,9 +361,12 @@
         Object.keys(db).forEach(k=>delete db[k]);
         Object.assign(db,restored);
       }catch(rollbackError){ console.error('[TAUR DATA] rollback failed',rollbackError); }
+      const failedTransactionId = transactionId;
+      const failedEventCount = transactionEvents.length;
       transactionEvents = [];
       transactionActive = false;
       transactionId = '';
+      emit('TRANSACTION_ROLLED_BACK',{at:now(),transactionId:failedTransactionId,eventCount:failedEventCount,reason:'exception'});
       transactionEvents = previousEvents;
       return validationError('TRANSACTION_FAILED',error?.message||'Transaction failed');
     }
