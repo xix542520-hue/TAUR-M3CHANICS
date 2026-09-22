@@ -1,7 +1,8 @@
 /* TAUR OPERATIONAL UX V1 — ID-based customer → vehicle → job navigation */
 (()=>{
  const KEY='TAUR_M3CHANICS_FINAL_V1';
- const db=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[]}}catch{return {customers:[],vehicles:[],jobs:[]}}};
+ const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
+ const db=()=>window.TAUR?.data?{customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[],jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[]}:legacyDb();
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const money=n=>'$'+Number(n||0).toFixed(2);
  const openJob=id=>{if(!id)return;if(typeof window.taurXipOpenJobFile==='function')window.taurXipOpenJobFile(id);else if(typeof window.jobFile==='function')window.jobFile(id)};
