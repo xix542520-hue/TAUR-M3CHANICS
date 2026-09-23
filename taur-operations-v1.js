@@ -1,7 +1,7 @@
 /* TAUR OPERATIONS V2.2 — command center, economics, follow-ups, history. */
 (()=>{
  const KEY='TAUR_M3CHANICS_FINAL_V1',U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';let sb=null,bid='',expenses=[],tab='dashboard';
- const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),money=n=>'=p=>Number(p?.baseAmount??(p?.tip!=null?Number(p?.amount||0)-Number(p.tip||0):p?.amount??0)),tip=p=>Number(p?.tip??0),jobRev=(j,d)=>d.payments.filter(p=>p.jobId===j.id).reduce((s,p)=>s+Math.max(0,base(p)),0),jobExpenses=id=>expenses.filter(x=>(x.job_id||x.jobId)===id).reduce((s,x)=>s+Number(x.amount||0),0);
+ const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),money=n=>'$'+Number(n||0).toFixed(2);
  const expenseFund=e=>String(e?.funding_source||e?.fundingSource||'BUSINESS_REVENUE').toUpperCase();
  async function cloud(){if(sb&&bid)return true;if(!window.supabase)return false;sb=window.supabase.createClient(U,K);const {data:{session}}=await sb.auth.getSession();if(!session)return false;bid=localStorage.getItem('TAUR_BUSINESS_ID')||'';if(!bid){const r=await sb.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(r.error)return false;bid=r.data;localStorage.setItem('TAUR_BUSINESS_ID',bid)}return true}
  async function pullExpenses(){if(!await cloud())return false;const r=await sb.from('business_expenses').select('*').eq('business_id',bid).order('occurred_at',{ascending:false});if(r.error)return false;expenses=r.data||[];return true}
