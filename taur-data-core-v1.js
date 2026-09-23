@@ -233,6 +233,24 @@
     remove: id => remove('quotes', id)
   };
 
+  const partners = {
+    get: id => find('partners', id),
+    list: () => ensureCollection('partners'),
+    create: data => create('partners', data),
+    update: (id, patch) => update('partners', id, patch),
+    remove: id => remove('partners', id)
+  };
+
+  const referrals = {
+    get: id => find('referrals', id),
+    list: () => ensureCollection('referrals'),
+    listByCustomer: customerId => ensureCollection('referrals').filter(r => r && r.customerId === customerId),
+    listByPartner: partnerId => ensureCollection('referrals').filter(r => r && r.partnerId === partnerId),
+    create: data => create('referrals', data),
+    update: (id, patch) => update('referrals', id, patch),
+    remove: id => remove('referrals', id)
+  };
+
   const leads = {
     get: id => find('leads', id),
     list: () => ensureCollection('leads'),
