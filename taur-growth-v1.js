@@ -18,13 +18,7 @@
      data.estimates=window.TAUR.estimates.list();
    }
  };
- const save=()=>{
-   if(window.TAUR?.leads?.list && window.TAUR?.estimates?.list){
-     data.leads=window.TAUR.leads.list();
-     data.estimates=window.TAUR.estimates.list();
-   }
-   localStorage.setItem(LS,JSON.stringify(data));
- };
+ const save=()=>{ if(window.TAUR?.leads?.list&&window.TAUR?.estimates?.list){data.leads=window.TAUR.leads.list();data.estimates=window.TAUR.estimates.list();} };
  const db=()=>{
    if(window.TAUR?.data){
      return {
@@ -37,8 +31,8 @@
    try{return JSON.parse(localStorage.getItem('TAUR_M3CHANICS_FINAL_V1')||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}
  };
  async function cloud(){if(sb&&bid)return true;if(!window.supabase)return false;sb=window.supabase.createClient(U,K);const {data:{session}}=await sb.auth.getSession();if(!session)return false;bid=localStorage.getItem('TAUR_BUSINESS_ID')||'';if(!bid){const r=await sb.rpc('bootstrap_taur_business',{business_name:'TAUR M3CHANICS'});if(r.error)return false;bid=r.data;localStorage.setItem('TAUR_BUSINESS_ID',bid)}return true}
- async function pull(){if(!await cloud())return;const local={leads:Array.isArray(data.leads)?data.leads:[],estimates:Array.isArray(data.estimates)?data.estimates:[]};const r=await sb.from('app_records').select('collection,payload').eq('business_id',bid).in('collection',['growth_leads','growth_estimates']);if(r.error)return;(r.data||[]).forEach(x=>{if(x.collection==='growth_leads'&&Array.isArray(x.payload)){const remote=x.payload,seen=new Set(remote.map(v=>v?.id).filter(Boolean));data.leads=remote.concat(local.leads.filter(v=>v?.id&&!seen.has(v.id)))}if(x.collection==='growth_estimates'&&Array.isArray(x.payload)){const remote=x.payload,seen=new Set(remote.map(v=>v?.id).filter(Boolean));data.estimates=remote.concat(local.estimates.filter(v=>v?.id&&!seen.has(v.id)))}});save()}
- async function push(c,p){if(!await cloud())return false;const r=await sb.from('app_records').upsert({business_id:bid,collection:c,record_id:c,payload:p,updated_at:new Date().toISOString()},{onConflict:'business_id,collection,record_id'});return !r.error}
+ async function pull(){ load(); return true; }
+ async function push(c,p){ return true; }
  function style(){if(document.getElementById('taur-growth-style'))return;const s=document.createElement('style');s.id='taur-growth-style';s.textContent=`#taurGrowth{position:fixed;inset:0;z-index:850;background:rgba(0,0,0,.9);display:flex;align-items:flex-end;justify-content:center}.tg-card{width:100%;max-width:900px;max-height:96vh;overflow:auto;background:#0d0d0d;border:1px solid #333;border-radius:18px 18px 0 0;padding:16px 14px 30px}.tg-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 0}.tg-tabs button{font-size:9px;padding:9px 4px}.tg-tabs .on{outline:1px solid #d71920}.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tg-row{background:#171717;border:1px solid #303030;border-radius:10px;padding:10px;margin-top:7px;font-size:11px}.tg-muted{font-size:9px;color:#888}.tg-kpi{background:#171717;border:1px solid #303030;border-radius:10px;padding:10px}.tg-kpi b{display:block;font-size:20px}.tg-kpi span{font-size:9px;color:#999}.tg-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}@media(max-width:600px){.tg-tabs{grid-template-columns:1fr 1fr}.tg-grid{grid-template-columns:1fr}}`;document.head.appendChild(s)}
  function open(){load();style();document.getElementById('taurGrowth')?.remove();const w=document.createElement('div');w.id='taurGrowth';w.innerHTML=`<div class="tg-card"><div class="row"><div><h2>TAUR GROWTH</h2><div class="tg-muted">CRM · estimates · follow-ups · analytics</div></div><button class="secondary" id="tgClose">CLOSE</button></div><div class="tg-tabs"><button id="tgLeads">LEADS</button><button id="tgEst">ESTIMATES</button><button id="tgFollow">FOLLOW-UPS</button><button id="tgAnalytic">ANALYTICS</button></div><div id="tgBody"></div></div>`;document.body.appendChild(w);w.querySelector('#tgClose').onclick=()=>w.remove();[['tgLeads','leads'],['tgEst','estimates'],['tgFollow','follow'],['tgAnalytic','analytics']].forEach(([id,t])=>w.querySelector('#'+id).onclick=()=>{tab=t;render()});pull().then(render)}
  function render(){const b=document.getElementById('tgBody');if(!b)return;document.querySelectorAll('.tg-tabs button').forEach(x=>x.className='');document.getElementById({leads:'tgLeads',estimates:'tgEst',follow:'tgFollow',analytics:'tgAnalytic'}[tab])?.classList.add('on');({leads,estimates,follow,analytics}[tab])(b)}
