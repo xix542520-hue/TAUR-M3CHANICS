@@ -151,9 +151,9 @@ render();
       const jobData={type:w.querySelector('#xType').value,stage:'INTAKE',status:'OPEN',title,customerId:cid,vehicleId:vid,complaint:w.querySelector('#xComplaint').value.trim(),total,warranty:'',approval:{status:'NOT REQUESTED',at:'',method:'',note:''},serviceFamily:detail?(serviceFamilies[0]||''):'',condition:detail?w.querySelector('#xCondition').value:'',vehicleSize:detail?w.querySelector('#xSize').value:'',addOns:picks,priceBookSelections:picks,leadSource:w.querySelector('#xLead').value,laborHours:0,travelMinutes:0,materialsCost:0,followUpDate:w.querySelector('#xFollow').value};
       const coreAvailable=typeof window.TAUR?.jobs?.create==='function';
       const j=coreAvailable?window.TAUR.jobs.create(jobData):null;
-      if(coreAvailable&&!j)return alert('Job was rejected by the Data Core; nothing was recorded.');
-      if(!coreAvailable){const fallback={id,created:now,updated:now,...jobData};db.jobs.push(fallback);save();}
-      const createdId=j?.id||id;
+      if(!coreAvailable)return alert('Data Core unavailable; job creation is blocked to protect canonical state.');
+      if(!j)return alert('Job was rejected by the Data Core; nothing was recorded.');
+      const createdId=j.id;
       window.dispatchEvent(new Event('taur-cloud-sync'));
       close();
       if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(createdId);else jobFile(createdId);
@@ -220,13 +220,13 @@ render();
     if(isNew){
       const coreAvailable=typeof window.TAUR?.customers?.create==="function";
       if(coreAvailable)c=window.TAUR.customers.create(data);
-      if(coreAvailable&&!c)return alert("Customer was rejected by the Data Core; nothing was recorded.");
-      if(!coreAvailable){c={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.customers.push(c);save();}
+      if(!coreAvailable)return alert("Data Core unavailable; customer creation is blocked to protect canonical state.");
+      if(!c)return alert("Customer was rejected by the Data Core; nothing was recorded.");
     } else {
       const coreAvailable=typeof window.TAUR?.customers?.update==="function";
       const updated=coreAvailable?window.TAUR.customers.update(c.id,data):null;
-      if(coreAvailable&&!updated)return alert("Customer update was rejected by the Data Core; nothing was changed.");
-      if(!coreAvailable){Object.assign(c,data,{updated:new Date().toISOString()});save();}
+      if(!coreAvailable)return alert("Data Core unavailable; customer update is blocked to protect canonical state.");
+      if(!updated)return alert("Customer update was rejected by the Data Core; nothing was changed.");
     }
     closeV2();render();
   };
@@ -246,13 +246,13 @@ render();
     if(isNew){
       const coreAvailable=typeof window.TAUR?.vehicles?.create==="function";
       if(coreAvailable)v=window.TAUR.vehicles.create(data);
-      if(coreAvailable&&!v)return alert("Vehicle was rejected by the Data Core; nothing was recorded.");
-      if(!coreAvailable){v={id:uid(),created:new Date().toISOString(),updated:new Date().toISOString(),...data};db.vehicles.push(v);save();}
+      if(!coreAvailable)return alert("Data Core unavailable; vehicle creation is blocked to protect canonical state.");
+      if(!v)return alert("Vehicle was rejected by the Data Core; nothing was recorded.");
     } else {
       const coreAvailable=typeof window.TAUR?.vehicles?.update==="function";
       const updated=coreAvailable?window.TAUR.vehicles.update(v.id,data):null;
-      if(coreAvailable&&!updated)return alert("Vehicle update was rejected by the Data Core; nothing was changed.");
-      if(!coreAvailable){Object.assign(v,data,{updated:new Date().toISOString()});save();}
+      if(!coreAvailable)return alert("Data Core unavailable; vehicle update is blocked to protect canonical state.");
+      if(!updated)return alert("Vehicle update was rejected by the Data Core; nothing was changed.");
     }
     closeV2();render();
   };
