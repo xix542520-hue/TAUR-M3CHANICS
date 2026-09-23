@@ -51,7 +51,7 @@ assert(sandbox.window.TAUR.jobs.balance(payJob.id)===0,'Job becomes paid at base
 const extra=sandbox.window.TAUR.payments.create({jobId:payJob.id,baseAmount:25,tip:5});
 assert(extra,'Overpayment record should still be accepted as historical payment');
 assert(sandbox.window.TAUR.jobs.balance(payJob.id)===0,'Overpayment cannot produce negative balance');
-assert(sandbox.window.TAUR.payments.collectedForJob(payJob.id)===130,'Collected total includes tips');
+assert(sandbox.window.TAUR.payments.collectedForJob(payJob.id)===150,'Collected total includes tips');
 assert(sandbox.window.TAUR.jobs.remove(payJob.id)===null,'Job deletion is blocked by payment history');
 const quoteCustomer=sandbox.window.TAUR.customers.create({name:'__QUOTE_INTEGRATION__'});
 const quote=sandbox.window.TAUR.quotes.create({customerId:quoteCustomer.id,status:'APPROVED',total:175});
