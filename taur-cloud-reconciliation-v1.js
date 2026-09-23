@@ -41,8 +41,8 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
    });
    for(const [id,record] of localMap){
     const remote=remoteMap.get(id);
-    if(!remote){actions.create++;continue}
-    if(compareRecordState(record,remote)==='UPDATE')actions.update++;else actions.keep++;
+    if(!remote){actions.create++;ids.create.push(id);continue}
+    if(compareRecordState(record,remote)==='UPDATE'){actions.update++;ids.update.push(id)}else{actions.keep++;ids.keep.push(id)}
    }
    const staleIds=[...remoteMap.keys()].filter(id=>!localMap.has(id));actions.delete=staleIds.length;ids.delete.push(...staleIds);
    const legacyDeletes=(remoteByCollection[collection]||[]).some(row=>String(row.record_id)===collection)?1:0;
