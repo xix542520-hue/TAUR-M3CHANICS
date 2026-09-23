@@ -3,7 +3,6 @@
  const KEY='TAUR_M3CHANICS_FINAL_V1';
  const legacyRead=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],partners:[],referrals:[]}}catch{return {customers:[],vehicles:[],jobs:[],partners:[],referrals:[]}}};
  const read=()=>window.TAUR?.data?{customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[],jobs:window.TAUR.jobs?.list?.()||[],partners:window.TAUR.partners?.list?.()||[],referrals:window.TAUR.referrals?.list?.()||[]}:legacyRead();
- const write=d=>localStorage.setItem(KEY,JSON.stringify(d));
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
  const P=id=>window.TAUR?.partners?.get?.(id)||read().partners.find(x=>x.id===id);
