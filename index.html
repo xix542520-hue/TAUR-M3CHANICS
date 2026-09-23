@@ -25,7 +25,7 @@ nav button{background:#0d0d0d;color:#999;border-radius:0;padding:11px 2px;font-s
 const KEY="TAUR_M3CHANICS_FINAL_V1";
 const defaults={customers:[],vehicles:[],jobs:[],quotes:[],payments:[],parts:[],pricing:[],tools:[],research:[],settings:{business:"TAUR M3CHANICS"}};
 const parseLocal=(k,fallback=null)=>{try{const raw=localStorage.getItem(k);return raw?JSON.parse(raw):fallback}catch{return fallback}};
-let db=parseLocal(KEY)||parseLocal("TAUR_M3CHANICS_v5")||parseLocal("TAUR_M3CHANICS_v4")||JSON.parse(JSON.stringify(defaults));
+var db=parseLocal(KEY)||parseLocal("TAUR_M3CHANICS_v5")||parseLocal("TAUR_M3CHANICS_v4")||JSON.parse(JSON.stringify(defaults));
 window.taurSetDb=next=>{if(next&&typeof next==="object")db=next};
 Object.keys(defaults).forEach(k=>{if(db[k]===undefined)db[k]=Array.isArray(defaults[k])?[]:defaults[k]});
 function taurBootMigrate(){
