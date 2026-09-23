@@ -286,6 +286,14 @@
     remove: id => remove('payments', id)
   };
 
+  const pricebook = {
+    get: id => find('pricing', id),
+    list: () => ensureCollection('pricing'),
+    create: data => create('pricing', data),
+    update: (id, patch) => update('pricing', id, patch),
+    remove: id => remove('pricing', id)
+  };
+
   root.version = '1.0.0';
   const tombstones = {
     get: id => find('tombstones', id),
