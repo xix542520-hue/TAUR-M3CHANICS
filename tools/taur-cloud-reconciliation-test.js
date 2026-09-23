@@ -42,7 +42,7 @@ const duplicatePlan=reconciliation.buildReconciliationPlan(
   {collection:'unknown',record_id:'ghost',payload:{id:'ghost'},updated_at:'2026-01-01T00:00:00.000Z'}
  ]);
 check('planner duplicate remote IDs collapse deterministically',()=>{assert.strictEqual(duplicatePlan.collections.customers.actions.update,0);assert.strictEqual(duplicatePlan.collections.customers.actions.keep,1);assert.strictEqual(duplicatePlan.totals.delete,0)});
-check('planner exposes exact action IDs',()=>{const ids=duplicatePlan.collections.customers.ids;assert.deepStrictEqual(ids.create,[]);assert.deepStrictEqual(ids.update,[]);assert.deepStrictEqual(ids.keep,['dup']);assert.deepStrictEqual(ids.delete,[])});
+check('planner exposes exact action IDs',()=>{const ids=duplicatePlan.collections.customers.ids;assert.deepStrictEqual(Array.from(ids.create),[]);assert.deepStrictEqual(Array.from(ids.update),[]);assert.deepStrictEqual(Array.from(ids.keep),['dup']);assert.deepStrictEqual(Array.from(ids.delete),[])});
 check('timestamp precedence uses record updated timestamp',()=>{
   const local={id:'ts',updated:'2026-01-05T00:00:00.000Z',value:1};
   const remote={payload:{id:'ts',updated:'2026-01-04T00:00:00.000Z',value:0},updated_at:'2026-01-04T00:00:00.000Z'};
