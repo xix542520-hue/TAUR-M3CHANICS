@@ -313,6 +313,16 @@
   };
 
   root.version = '1.0.0';
+  root.customers = customers;
+  root.vehicles = vehicles;
+  root.jobs = jobs;
+  root.quotes = quotes;
+  root.payments = payments;
+  root.pricebook = pricebook;
+  root.partners = partners;
+  root.referrals = referrals;
+  root.leads = leads;
+  root.estimates = estimates;
   const tombstones = {
     get: id => find('tombstones', id),
     list: () => ensureCollection('tombstones')
