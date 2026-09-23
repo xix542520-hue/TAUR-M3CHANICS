@@ -78,7 +78,8 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
  }
  window.taurCloudDiagnostics=()=>({remoteReady,businessId:!!businessId,syncing,loadingRemote,lastReconciliationPlan:lastReconciliationPlan?JSON.parse(JSON.stringify(lastReconciliationPlan)):null});
  async function syncNow(){if(!client||!businessId||syncing)return false;const local=localDb();if(!local)return false;syncing=true;try{
-   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   if(remoteError)throw remoteError;
+   const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);
+   if(remoteError)throw remoteError;
    const merged=mergeRemoteRowsIntoLocal(local,remoteRows);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
    const reconciliationPlan=TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(merged,remoteRows,COLLECTIONS); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
