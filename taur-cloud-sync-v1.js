@@ -13,8 +13,7 @@ let lastReconciliationPlan=null;
  const mergeRecords=TAUR_CLOUD_RECONCILIATION.mergeRecords;
  const applyTombstones=TAUR_CLOUD_RECONCILIATION.applyTombstones;
  const buildReconciliationPlan=(local,remoteRows)=>TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(local,remoteRows,COLLECTIONS);
- const compareRecordState=TAUR_CLOUD_RECONCILIATION.compareRecordState;
- const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
+  const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  function scheduleCoreSync(){
   if(!remoteReady||loadingRemote||!client||!businessId)return;
