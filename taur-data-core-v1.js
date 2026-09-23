@@ -424,7 +424,7 @@
         assert('tip tracked separately', payments.tipsForJob(job.id) === 20);
         assert('job balance uses base payment', jobs.balance(job.id) === 20);
         assert('dependent customer delete blocked', customers.remove(customer.id) === null);
-        const rollbackResult = transaction(()=>{
+        const rollbackResult = root.transaction(()=>{
           const temp = customers.create({name:'__TAUR_ROLLBACK__'});
           assert('transaction create', !!temp);
           return false;
@@ -441,7 +441,7 @@
         const offSavedTest = on('DATA_SAVED', () => savedEvents++);
         const offCommittedTest = on('TRANSACTION_COMMITTED', () => committedEvents++);
         const savedBeforeCommit = savedEvents, committedBeforeCommit = committedEvents;
-        const commitResult = transaction(()=>{
+        const commitResult = root.transaction(()=>{
           const temp = customers.create({name:'__TAUR_COMMIT__'});
           assert('transaction commit create', !!temp);
           return temp;
@@ -450,14 +450,14 @@
         assert('commit persists once', savedEvents===savedBeforeCommit+1);
         assert('commit emits once', committedEvents===committedBeforeCommit+1);
         const savedBeforeRollback = savedEvents, committedBeforeRollback = committedEvents;
-        const rollbackEventResult = transaction(()=>{
+        const rollbackEventResult = root.transaction(()=>{
           customers.create({name:'__TAUR_ROLLBACK_EVENTS__'});
           return false;
         });
         assert('rollback has no save event', savedEvents===savedBeforeRollback);
         assert('rollback has no commit event', committedEvents===committedBeforeRollback);
         assert('rollback removes created record', !customers.list().some(x=>x.name==='__TAUR_ROLLBACK_EVENTS__'));
-        const thrownRollback = transaction(()=>{
+        const thrownRollback = root.transaction(()=>{
           customers.create({name:'__TAUR_THROW_ROLLBACK__'});
           throw new Error('forced rollback');
         });
