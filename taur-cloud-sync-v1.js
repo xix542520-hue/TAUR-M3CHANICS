@@ -150,9 +150,9 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const tie=mergeRecords([a],[{...a,updated:'2026-01-01T00:00:00Z',value:7}]);assert('equal timestamps remain deterministic',tie[0].value===7);
    const tomb={id:'customers:a',collection:'customers',recordId:'a',deletedAt:'2026-01-03T00:00:00Z'};
    const freshDb={customers:[{id:'a',updated:'2026-01-04T00:00:00Z',value:4}],tombstones:[tomb]};
-   applyTombstones(freshDb);assert('newer recreation beats tombstone',freshDb.customers.some(x=>x.id==='a')&&!freshDb.tombstones.some(x=>x.id===tomb.id));
+   const freshApplied=applyTombstones(freshDb);assert('newer recreation beats tombstone',freshApplied.customers.some(x=>x.id==='a')&&!freshApplied.tombstones.some(x=>x.id===tomb.id));
    const staleDb={customers:[{id:'a',updated:'2026-01-02T00:00:00Z',value:9}],tombstones:[tomb]};
-   applyTombstones(staleDb);assert('tombstone removes stale recreation',!staleDb.customers.some(x=>x.id==='a')&&staleDb.tombstones.some(x=>x.id===tomb.id));
+   const staleApplied=applyTombstones(staleDb);assert('tombstone removes stale recreation',!staleApplied.customers.some(x=>x.id==='a')&&staleApplied.tombstones.some(x=>x.id===tomb.id));
    return {ok:results.every(x=>x.pass),results};
  }};
  if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='TOMBSTONE_CREATED'||e.type==='DATA_SAVED')scheduleCoreSync()});}
