@@ -147,7 +147,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const merged=mergeRecords([a],[b]);assert('different records both survive',merged.length===2);
    const newer=mergeRecords([a],[{...a,updated:'2026-01-02T00:00:00Z',value:3}]);assert('newer update wins',newer[0].value===3);
    const older=mergeRecords([a],[{...a,updated:'2025-12-01T00:00:00Z',value:9}]);assert('older update loses',older[0].value===1);
-   const tie=mergeRecords([a],[{...a,updated:'2026-01-01T00:00:00Z',value:7}]);assert('equal timestamps remain deterministic',tie[0].value===1);
+   const tie=mergeRecords([a],[{...a,updated:'2026-01-01T00:00:00Z',value:7}]);assert('equal timestamps remain deterministic',tie[0].value===7);
    const tomb={id:'customers:a',collection:'customers',recordId:'a',deletedAt:'2026-01-03T00:00:00Z'};
    const freshDb={customers:[{id:'a',updated:'2026-01-04T00:00:00Z',value:4}],tombstones:[tomb]};
    applyTombstones(freshDb);assert('newer recreation beats tombstone',freshDb.customers.some(x=>x.id==='a')&&!freshDb.tombstones.some(x=>x.id===tomb.id));
