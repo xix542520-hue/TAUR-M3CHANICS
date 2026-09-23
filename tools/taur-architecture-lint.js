@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
-const EXCLUDE = new Set(['node_modules','.git']);
+const EXCLUDE = new Set(['node_modules','.git','tools']);
 const FILE_EXT = new Set(['.js','.html']);
 const MUTATION_EXEMPT_FILES = new Set(['taur-data-core-v1.js']);
 const CONTRACTS=[
