@@ -8,7 +8,6 @@ const required=[
   'TAUR_CLOUD_RECONCILIATION.mergeRecords',
   'TAUR_CLOUD_RECONCILIATION.applyTombstones',
   'TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan',
-  'TAUR_CLOUD_RECONCILIATION.compareRecordState',
   'function scheduleCoreSync()',
   'if(!remoteReady||loadingRemote||!client||!businessId)return;',
   "window.TAUR.on('DATA_SAVED',scheduleCoreSync)",
