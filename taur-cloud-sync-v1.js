@@ -136,7 +136,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
     coreSyncTimer=setTimeout(()=>{coreSyncTimer=null;loadRemote().catch(console.error)},350);
   }).subscribe();
 }
- let scheduled=null;const queue=()=>{if(!remoteReady||syncing||loadingRemote)return;statusBar(true,'SAVING');clearTimeout(scheduled);scheduled=setTimeout(()=>{scheduled=null;syncNow()},1200)};const originalSet=localStorage.setItem.bind(localStorage);localStorage.setItem=function(k,v){originalSet(k,v);if(k===KEY)queue()};window.addEventListener('beforeunload',()=>{if(remoteReady)syncNow()});window.addEventListener('taur-cloud-sync',queue);
+ window.addEventListener('beforeunload',()=>{if(remoteReady)syncNow()});window.addEventListener('taur-cloud-sync',()=>{if(remoteReady)syncNow()});
 
  window.taurCloudTests={run:()=>{
    const results=[];const assert=(name,ok)=>results.push({name,pass:!!ok});
