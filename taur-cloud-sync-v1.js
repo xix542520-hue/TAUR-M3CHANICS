@@ -155,6 +155,6 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    applyTombstones(staleDb);assert('tombstone removes stale recreation',!staleDb.customers.some(x=>x.id==='a')&&staleDb.tombstones.some(x=>x.id===tomb.id));
    return {ok:results.every(x=>x.pass),results};
  }};
- if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='TOMBSTONE_CREATED'||e.type==='DATA_SAVED')queue()});}
+ if(window.TAUR?.on){window.TAUR.on('*',e=>{if(!e?.type)return;if(/_(CREATED|UPDATED|REMOVED)$/.test(e.type)||e.type==='TOMBSTONE_CREATED'||e.type==='DATA_SAVED')scheduleCoreSync()});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
