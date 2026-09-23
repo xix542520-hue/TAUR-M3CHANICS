@@ -4,13 +4,11 @@
 */
 (()=>{
  const U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';
- const KEY='TAUR_M3CHANICS_FINAL_V1';
  const cats=['SUPPLIES','EQUIPMENT','GAS','ADVERTISING','TOOLS','PARTS','FEES','OTHER'];
  let sb=null,bid='';
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
  const money=n=>'$'+Number(n||0).toFixed(2);
- const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{jobs:[],payments:[],customers:[],vehicles:[]}}catch{return {jobs:[],payments:[],customers:[],vehicles:[]}}};
- const localDb=()=>window.TAUR?.data?{jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[],customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[]}:legacyDb();
+ const localDb=()=>window.TAUR?.data?{jobs:window.TAUR.jobs?.list?.()||[],payments:window.TAUR.payments?.list?.()||[],customers:window.TAUR.customers?.list?.()||[],vehicles:window.TAUR.vehicles?.list?.()||[]}:{jobs:[],payments:[],customers:[],vehicles:[]};
  const C=(db,id)=>db.customers?.find(x=>x.id===id);
  const V=(db,id)=>db.vehicles?.find(x=>x.id===id);
  const paid=(db,id)=>{const rows=window.TAUR?.payments?.forJob?.(id);if(Array.isArray(rows))return rows.reduce((n,p)=>n+Math.max(0,Number(window.TAUR.payments.baseAmount?.(p)??p.amount??0)),0);return (db.payments||[]).filter(p=>p.jobId===id).reduce((n,p)=>n+Number(p.amount||0),0)};
