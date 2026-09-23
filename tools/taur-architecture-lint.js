@@ -36,7 +36,6 @@ for(const file of files){
       const before=text.slice(0,m.index);
       const line=before.split('\n').length;
       const lineText=text.split('\n')[line-1]?.trim()||'';
-      if(lineText.includes('if(!coreAvailable)')) continue;
       if(file.endsWith('taur-cloud-sync-v1.js') && /db\.(leads|estimates)=mergeRecords/.test(lineText)) continue;
       violations.push({file:path.relative(ROOT,file),line,rule:rule.name,source:lineText});
     }
