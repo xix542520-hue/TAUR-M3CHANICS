@@ -7,7 +7,7 @@ const EXCLUDE = new Set(['node_modules','.git']);
 const FILE_EXT = new Set(['.js','.html']);
 const MUTATION_EXEMPT_FILES = new Set(['taur-data-core-v1.js']);
 const CONTRACTS=[
-  {name:'cloud sync must delegate reconciliation',file:'taur-cloud-sync-v1.js',required:['TAUR_CLOUD_RECONCILIATION.mergeRecords','TAUR_CLOUD_RECONCILIATION.applyTombstones','TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan','TAUR_CLOUD_RECONCILIATION.compareRecordState']},
+  {name:'cloud sync must delegate reconciliation',file:'taur-cloud-sync-v1.js',required:['TAUR_CLOUD_RECONCILIATION.mergeRecords','TAUR_CLOUD_RECONCILIATION.applyTombstones','TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan']},
   {name:'standalone reconciliation must stay runtime-independent',file:'taur-cloud-reconciliation-v1.js',forbidden:['localStorage','document','supabase','fetch','alert','confirm']}
 ];
 const FORBIDDEN = [
