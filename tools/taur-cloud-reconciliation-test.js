@@ -72,9 +72,9 @@ check('mergeRecords is non-mutating',()=>{
 
 const stale={customers:[{id:'cust-1',updated:'2026-01-01T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 check('newer tombstone removes stale record',()=>assert.strictEqual(reconciliation.applyTombstones(stale).customers.length,0));
-check('applyTombstones is non-mutating',()=>{const input=JSON.parse(JSON.stringify(recreation));reconciliation.applyTombstones(input);assert.deepStrictEqual(input,recreation)});
 const recreation={customers:[{id:'cust-1',updated:'2026-01-03T00:00:00.000Z'}],tombstones:[{collection:'customers',recordId:'cust-1',deletedAt:'2026-01-02T00:00:00.000Z'}]};
 check('newer recreation survives and clears tombstone',()=>{const out=reconciliation.applyTombstones(recreation);assert.strictEqual(out.customers.length,1);assert.strictEqual(out.tombstones.length,0)});
+check('applyTombstones is non-mutating',()=>{const input=JSON.parse(JSON.stringify(recreation));reconciliation.applyTombstones(input);assert.deepStrictEqual(input,recreation)});
 const equalTombstoneRecord={id:'cust-tie',updated:'2026-01-02T00:00:00.000Z',a:1,b:2};
 const equalTombstone={customers:[equalTombstoneRecord],tombstones:[{collection:'customers',recordId:'cust-tie',deletedAt:'2026-01-02T00:00:00.000Z',b:2,a:1}]};
 check('duplicate tombstones collapse to one canonical deletion',()=>{
