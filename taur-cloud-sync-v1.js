@@ -81,7 +81,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const {data:remoteRows,error:remoteError}=await client.from('app_records').select('collection,record_id,payload,updated_at').eq('business_id',businessId);\n   if(remoteError)throw remoteError;
    const merged=mergeRemoteRowsIntoLocal(local,remoteRows);
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
-   const reconciliationPlan=buildReconciliationPlan(merged,remoteRows); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
+   const reconciliationPlan=TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(merged,remoteRows,COLLECTIONS); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
    const staleByCollection={};
    for(const collection of COLLECTIONS){
      if(collection==='settings'){
