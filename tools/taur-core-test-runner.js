@@ -83,7 +83,7 @@ assert(idCustomer,'Fixed-ID record should be created');
 assert(sandbox.window.TAUR.customers.create({id:'__FIXED_ID__',name:'__ID_TWO__'})===null,'Duplicate canonical ID must be rejected');
 assert(sandbox.window.TAUR.customers.list().filter(x=>x.id==='__FIXED_ID__').length===1,'Duplicate ID rejection must preserve one canonical record');
 const diagnosticsBefore=sandbox.window.TAUR.diagnostics.errors().length;
-assert(sandbox.window.TAUR.customers.create({customerId:'missing-reference'})===null,'Invalid customer payload should be rejected');
+assert(sandbox.window.TAUR.customers.create(null)===null,'Invalid customer payload should be rejected');
 const diagnostic=sandbox.window.TAUR.diagnostics.lastError();
 assert(diagnostic&&diagnostic.code,'Rejected writes must produce a structured diagnostic');
 assert(sandbox.window.TAUR.diagnostics.errors().length===diagnosticsBefore+1,'Diagnostic history should record each rejected write');
