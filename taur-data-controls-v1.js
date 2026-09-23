@@ -5,7 +5,7 @@
  const close=()=>document.querySelector('.taur-dc-modal')?.remove();
  const job=id=>typeof J==='function'?J(id):window.db.jobs.find(x=>x.id===id);
  const customer=id=>typeof C==='function'?C(id):window.db.customers.find(x=>x.id===id);
- const vehicle=id=>typeof V==='function'?V(id):db.vehicles.find(x=>x.id===id);
+ const vehicle=id=>typeof V==='function'?V(id):window.db.vehicles.find(x=>x.id===id);
  const saveX=()=>typeof save==='function'?save():localStorage.setItem('TAUR_M3CHANICS_FINAL_V1',JSON.stringify(window.db));
  const paymentsFor=id=>window.TAUR?.payments?.forJob?.(id)||window.db.payments.filter(p=>p.jobId===id);
  const tipFor=id=>paymentsFor(id).reduce((n,p)=>n+Number(p.tip||0),0);
