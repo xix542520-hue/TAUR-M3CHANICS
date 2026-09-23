@@ -85,6 +85,15 @@
     const exists = (collection, id) => !id || !!find(collection, id);
     if(name === 'vehicles' && d.customerId && !exists('customers', d.customerId))
       return validationError('INVALID_REFERENCE','Vehicle references a missing customer',{collection:name,id:recordId,field:'customerId',value:d.customerId});
+    if(name === 'vehicles' && d.customerId){
+      const current=find('vehicles',recordId);
+      if(current && current.customerId !== d.customerId){
+        const linkedJob=ensureCollection('jobs').find(j => j && j.vehicleId === recordId && j.customerId && j.customerId !== d.customerId);
+        if(linkedJob) return validationError('REFERENCE_MISMATCH','Vehicle reassignment would break an existing job relationship',{collection:name,id:recordId});
+        const linkedReferral=ensureCollection('referrals').find(r => r && r.vehicleId === recordId && r.customerId && r.customerId !== d.customerId);
+        if(linkedReferral) return validationError('REFERENCE_MISMATCH','Vehicle reassignment would break an existing referral relationship',{collection:name,id:recordId});
+      }
+    }
     if(name === 'jobs'){
       if(d.customerId && !exists('customers', d.customerId))
         return validationError('INVALID_REFERENCE','Job references a missing customer',{collection:name,id:recordId,field:'customerId',value:d.customerId});
