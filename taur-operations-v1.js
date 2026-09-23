@@ -1,9 +1,8 @@
 /* TAUR OPERATIONS V2.2 — command center, economics, follow-ups, history. */
 (()=>{
- const KEY='TAUR_M3CHANICS_FINAL_V1',U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';let sb=null,bid='',expenses=[],tab='dashboard';
+ const U='https://pgvicmzjrrqimwftftuj.supabase.co',K='sb_publishable_P8alxVgoTTthhJVXABHQWQ_YyK3rt8h';let sb=null,bid='',expenses=[],tab='dashboard';
  const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])),money=n=>'$'+Number(n||0).toFixed(2);
 
- const legacyDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')||{customers:[],vehicles:[],jobs:[],payments:[]}}catch{return {customers:[],vehicles:[],jobs:[],payments:[]}}};
  const db=()=>{
    const t=window.TAUR;
    if(t?.data){
@@ -14,7 +13,7 @@
        payments:t.payments?.list?.()||[]
      };
    }
-   return legacyDb();
+   return {customers:[],vehicles:[],jobs:[],payments:[]};
  };
  const base=p=>Number(p?.baseAmount??(p?.tip!=null?Number(p?.amount||0)-Number(p.tip||0):p?.amount??0));
  const tip=p=>Number(p?.tip??0);
