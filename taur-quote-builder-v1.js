@@ -18,8 +18,10 @@
     const existing=(root.quotes?.listByJob?.(jobId)||[]).slice().reverse()[0]||null;
     const catalog=serviceBook(), current=job.serviceId||existing?.serviceId||'';
     const currentService=catalog.find(s=>s.id===current)||catalog[0];
-    const currentCondition=job.condition||existing?.condition||'C1 — MAINTENANCE';
+    const currentCondition=job.inspectionCondition||job.condition||existing?.condition||'C1 — MAINTENANCE';
     const currentSize=job.vehicleSize||existing?.vehicleSize||'SEDAN / COUPE';
+    const inspectionFindings=job.inspectionFindings||[];
+    const inspectionExclusions=job.inspectionExclusions||[];
     const lineItems=existing?.lineItems||job.priceBookSelections||[];
     const selectedIds=new Set(lineItems.map(x=>x.id));
     const body=`<div class="taur-qb-grid">
@@ -31,7 +33,7 @@
       <div><label>MATERIAL ESTIMATE</label><input id="qbMaterials" type="number" min="0" step=".01" value="${Number(existing?.materialsCost??job.materialsCost??0)}"></div>
       <div><label>TRAVEL (MIN)</label><input id="qbTravel" type="number" min="0" step="1" value="${Number(existing?.travelMinutes??job.travelMinutes??0)}"></div>
       <div><label>QUOTE TOTAL</label><input id="qbTotal" type="number" min="0" step=".01" value="${Number(existing?.total??job.total??0)}"></div>
-      <div class="taur-qb-full"><div id="qbScope" class="taur-qb-scope"></div></div>
+      <div class="taur-qb-full"><div id="qbScope" class="taur-qb-scope"></div></div><div class="taur-qb-full"><div class="taur-qb-scope"><b>INSPECTION HANDOFF</b><div class="small">Condition: ${escQ(currentCondition)} • Findings: ${inspectionFindings.length} • Exclusions: ${inspectionExclusions.length}</div></div></div>
       <div class="taur-qb-full"><label>QUOTE NOTE / SCOPE CHANGE</label><textarea id="qbNote" placeholder="Document why the quote differs from the standard definition.">${escQ(existing?.note||'')}</textarea></div>
       <div class="taur-qb-full"><div id="qbWarning" class="taur-qb-warning"></div></div>
     </div>`;
@@ -66,14 +68,15 @@
       const result=root.serviceCatalog?.validate?.(svc.value,c);
       if(!result?.ok){warning.textContent='Selected service does not support this condition. Choose another service or condition.';return false}
       const extreme=c==='C4 — EXTREME / INSPECTION REQUIRED';
-      warning.textContent=extreme?'C4 requires inspection and scope definition before a fixed quote can be issued. Save as DRAFT until inspection is complete.':'Scope is traceable to the selected service definition. Price remains editable from the price book and field data.';
-      return !extreme;
+      const inspected=job.inspectionStatus==='COMPLETE' && job.inspectionScopeApproved===true;
+      warning.textContent=extreme&&!inspected?'C4 requires a completed, explicitly scoped inspection before approval. Save as DRAFT until inspection is complete.':extreme?'C4 inspection complete. Fixed quote may proceed with the documented scope.':'Scope is traceable to the selected service definition. Price remains editable from the price book and field data.';
+      return !extreme||inspected;
     }
     function saveQuote(status){
       const service=catalog.find(x=>x.id===svc.value), ok=!!service;
       if(!ok)return alert('Select a service definition.');
       const fixedOk=validate();
-      if(status==='APPROVED'&&!fixedOk)return alert('C4 inspection requirement prevents a fixed quote approval.');
+      if(status==='APPROVED'&&!fixedOk)return alert('Complete and explicitly scope the inspection before approving this quote.');
       const quoteData={
         jobId:jobId,customerId:job.customerId,vehicleId:job.vehicleId,status,
         serviceId:service.id,serviceVersion:service.version,serviceName:service.name,serviceFamily:service.family,
