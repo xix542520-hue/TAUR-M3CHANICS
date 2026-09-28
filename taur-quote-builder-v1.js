@@ -13,7 +13,7 @@
   const sizes=()=>root.serviceCatalog?.sizes?.()||[];
 
   function openQuote(jobId){
-    const job=root.jobs?.get?.(jobId)||J?.(jobId);
+    const job=root.jobs?.get?.(jobId)||null;
     if(!job)return;
     const existing=(root.quotes?.listByJob?.(jobId)||[]).slice().reverse()[0]||null;
     const catalog=serviceBook(), current=job.serviceId||existing?.serviceId||'';
