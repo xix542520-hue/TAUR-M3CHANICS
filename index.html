@@ -217,7 +217,7 @@ render();
   const saveCustomerV2=(wrap,c,isNew)=>{
     const name=wrap.querySelector('#tv2name').value.trim();
     if(!name)return alert('Customer name is required.');
-    const data={name,phone:wrap.querySelector('#tv2phone').value.trim(),email:wrap.querySelector('#tv2email').value.trim(),logRouting:wrap.querySelector('#tv2route').value,notes:wrap.querySelector('#tv2notes').value.trim()};
+    const data={name,phone:wrap.querySelector('#tv2phone').value.trim(),email:wrap.querySelector('#tv2email').value.trim(),logRouting:wrap.querySelector('#tv2route').value,notes:wrap.querySelector('#tv2notes-1').value.trim()};
     if(isNew){
       const coreAvailable=typeof window.TAUR?.customers?.create==="function";
       if(coreAvailable)c=window.TAUR.customers.create(data);
@@ -243,7 +243,7 @@ render();
     <div class="taur-v2-full"><label>NOTES</label><textarea id="tv2notes-2" placeholder="Short vehicle notes">${escV2(v?.notes||'')}</textarea></div>
   </div>`;
   const saveVehicleV2=(wrap,v,isNew)=>{
-    const data={customerId:wrap.querySelector('#tv2owner').value,year:wrap.querySelector('#tv2year').value.trim(),make:wrap.querySelector('#tv2make').value.trim(),model:wrap.querySelector('#tv2model').value.trim(),mileage:wrap.querySelector('#tv2mileage').value.trim(),notes:wrap.querySelector('#tv2notes').value.trim()};
+    const data={customerId:wrap.querySelector('#tv2owner').value,year:wrap.querySelector('#tv2year').value.trim(),make:wrap.querySelector('#tv2make').value.trim(),model:wrap.querySelector('#tv2model').value.trim(),mileage:wrap.querySelector('#tv2mileage').value.trim(),notes:wrap.querySelector('#tv2notes-2').value.trim()};
     if(isNew){
       const coreAvailable=typeof window.TAUR?.vehicles?.create==="function";
       if(coreAvailable)v=window.TAUR.vehicles.create(data);
@@ -270,4 +270,4 @@ render();
   labelMechanic();
 })();
 </script>
-<script src="taur-data-core-v1.js"></script><script src="taur-data-controls-v1.js"></script><script src="taur-pricebook-v1.js"></script><script src="taur-jobfile-xip-v2.js"></script><script src="taur-cloud-reconciliation-v1.js"></script><script src="taur-cloud-sync-v1.js?v=6b63c9b"></script><script src="taur-reinvestment-log-v1.js"></script><script src="DETAILING_QC_ENGINE.js"></script><script src="taur-operations-v1.js"></script><script src="taur-growth-v1.js"></script><script src="taur-integrity-v1.js"></script><script src="taur-home-command-center-v1.js"></script><script src="taur-customer-timeline-v1.js"></script><script src="taur-vehicle-history-v1.js"></script><script src="taur-growth-linking-v1.js"></script><script src="taur-job-linking-v1.js"></script><script src="taur-pricebook-bridge-v1.js"></script><script src="taur-new-job-linking-v1.js"></script><script src="taur-operational-ux-v1.js"></script><script src="taur-field-ux-v1.js"></script><script src="taur-payment-ledger-v1.js"></script><script src="taur-visual-system-v1.js"></script><script src="taur-visual-system-v2.js"></script><script src="taur-partner-network-v1.js"></script><script src="taur-cloud-sync-v1.js"></script></body></html>
+<script src="taur-data-core-v1.js"></script><script src="taur-data-controls-v1.js"></script><script src="taur-pricebook-v1.js"></script><script src="taur-jobfile-xip-v2.js"></script><script src="taur-cloud-reconciliation-v1.js"></script><script src="taur-cloud-sync-v1.js?v=6b63c9b"></script><script src="taur-reinvestment-log-v1.js"></script><script src="DETAILING_QC_ENGINE.js"></script><script src="taur-operations-v1.js"></script><script src="taur-growth-v1.js"></script><script src="taur-integrity-v1.js"></script><script src="taur-home-command-center-v1.js"></script><script src="taur-customer-timeline-v1.js"></script><script src="taur-vehicle-history-v1.js"></script><script src="taur-growth-linking-v1.js"></script><script src="taur-job-linking-v1.js"></script><script src="taur-pricebook-bridge-v1.js"></script><script src="taur-new-job-linking-v1.js"></script><script src="taur-operational-ux-v1.js"></script><script src="taur-field-ux-v1.js"></script><script src="taur-payment-ledger-v1.js"></script><script src="taur-visual-system-v1.js"></script><script src="taur-visual-system-v2.js"></script><script src="taur-partner-network-v1.js"></script></body></html>
