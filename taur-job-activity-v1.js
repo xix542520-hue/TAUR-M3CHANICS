@@ -51,11 +51,12 @@
     record(item.jobId,item.type,item.text,'',item.meta);
   });
 
-  root.on?.('DATA_CORE_READY',()=>{
+  const migrate=()=>{
     (root.jobs?.list?.()||[]).forEach(job=>{
       if(Array.isArray(job.activityLog))return;
       root.jobs.update(job.id,{activityLog:[]});
     });
     root.emit?.('JOB_ACTIVITY_READY',{version:'1.0.0'});
-  });
+  };
+  migrate();
 })();
