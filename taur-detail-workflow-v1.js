@@ -33,7 +33,7 @@
       const q=quotes.slice().reverse()[0];
       if(!q)return result(false,'QUOTE_REQUIRED','A quote must exist before approval.');
       if(q.status==='DRAFT')return result(false,'QUOTE_NOT_FINAL','The latest quote is still a draft.');
-      if(q.condition==='C4 — EXTREME / INSPECTION REQUIRED')return result(false,'INSPECTION_REQUIRED','Extreme-condition work requires inspection before approval.');
+      if(q.condition==='C4 — EXTREME / INSPECTION REQUIRED' && !(job.inspectionStatus==='COMPLETE' && job.inspectionScopeApproved===true))return result(false,'INSPECTION_REQUIRED','Extreme-condition work requires a completed, explicitly scoped inspection before approval.');
     }
     if(to==='BOOK' && !job.customerId)return result(false,'CUSTOMER_REQUIRED','A customer is required before booking.');
     if(to==='QC'){
