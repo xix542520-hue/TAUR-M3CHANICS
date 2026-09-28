@@ -33,6 +33,7 @@
       '<label>MATERIALS COST</label><input id="jeMaterials" type="number" step=".01" value="'+Number(j.materialsCost||0)+'">'+
       '<label>FOLLOW-UP DATE</label><input id="jeFollow" type="date" value="'+esc(String(j.followUpDate||'').slice(0,10))+'">'+
       '<label>NOTES</label><textarea id="jeNotes">'+esc(j.notes)+'</textarea>'+
+      '<label>FREEFORM JOB DETAILS</label><textarea id="jeFreeform" style="min-height:140px" placeholder="Anything else you want attached to this job...">'+esc(j.freeformDetails||'')+'</textarea>'+
       '<button id="jeSave" class="wide" style="margin-top:10px">SAVE JOB</button></div>';
     document.body.appendChild(d);
     d.querySelector('#jeClose').onclick=close;
@@ -54,7 +55,8 @@
         travelMinutes:Number(d.querySelector('#jeTravel').value||0),
         materialsCost:Number(d.querySelector('#jeMaterials').value||0),
         followUpDate:d.querySelector('#jeFollow').value,
-        notes:d.querySelector('#jeNotes').value.trim()
+        notes:d.querySelector('#jeNotes').value.trim(),
+        freeformDetails:d.querySelector('#jeFreeform').value
       };
       const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
