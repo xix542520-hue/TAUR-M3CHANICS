@@ -70,7 +70,7 @@ jobs:
             'partner referrals can open linked Job Files':'data-ref-job' in pn,
             'pricebook supports multiple selections':'type.addEventListener(\'change\'' in pb and 'selected=new Map()' in pb,
             'jobs persist package selections':'priceBookSelections:picks' in idx and 'const picks=' in idx,
-            'empty package selection is persisted':'if(Array.isArray(selected)){j.priceBookSelections=' in dc,
+            'empty package selection is persisted':'if(Array.isArray(selected)){patch.priceBookSelections=' in dc,
             'cloud sync uses reconciliation engine':'TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan' in Path('taur-cloud-sync-v1.js').read_text(encoding='utf-8'),
             'follow-ups use exact job IDs':'data-open-job' in ops,
             'growth lead UI is form-based':'Lead — Name | Phone' not in growth,
