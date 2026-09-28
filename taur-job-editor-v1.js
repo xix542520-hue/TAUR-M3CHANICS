@@ -34,8 +34,27 @@
       '<label>FOLLOW-UP DATE</label><input id="jeFollow" type="date" value="'+esc(String(j.followUpDate||'').slice(0,10))+'">'+
       '<label>NOTES</label><textarea id="jeNotes">'+esc(j.notes)+'</textarea>'+
       '<label>FREEFORM JOB DETAILS</label><textarea id="jeFreeform" style="min-height:140px" placeholder="Anything else you want attached to this job...">'+esc(j.freeformDetails||'')+'</textarea>'+
+      '<label>CUSTOM FIELDS</label><div id="jeCustomFields"></div><button type="button" class="ghost" id="jeAddField" style="margin:8px 0">+ ADD FIELD</button>'+
       '<button id="jeSave" class="wide" style="margin-top:10px">SAVE JOB</button></div>';
     document.body.appendChild(d);
+    const customWrap=d.querySelector('#jeCustomFields');
+    const customFields=Array.isArray(j.customFields)?j.customFields:[];
+    function renderCustomFields(){
+      customWrap.innerHTML='';
+      customFields.forEach((f,i)=>{
+        const row=document.createElement('div');
+        row.style.cssText='display:grid;grid-template-columns:1fr 1.5fr auto;gap:8px;margin:6px 0';
+        row.innerHTML='<input class="cfName" placeholder="Field name" value="'+esc(f.name||'')+'"><input class="cfValue" placeholder="Value" value="'+esc(f.value||'')+'"><button type="button" class="ghost cfRemove">REMOVE</button>';
+        row.querySelector('.cfRemove').onclick=()=>{customFields.splice(i,1);renderCustomFields();};
+        customWrap.appendChild(row);
+      });
+    }
+    renderCustomFields();
+    d.querySelector('#jeAddField').onclick=()=>{
+      customFields.push({name:'',value:''});
+      renderCustomFields();
+      customWrap.lastElementChild?.querySelector('.cfName')?.focus();
+    };
     d.querySelector('#jeClose').onclick=close;
     d.querySelector('#jeSave').onclick=()=>{
       const patch={
@@ -56,7 +75,11 @@
         materialsCost:Number(d.querySelector('#jeMaterials').value||0),
         followUpDate:d.querySelector('#jeFollow').value,
         notes:d.querySelector('#jeNotes').value.trim(),
-        freeformDetails:d.querySelector('#jeFreeform').value
+        freeformDetails:d.querySelector('#jeFreeform').value,
+        customFields:Array.from(customWrap.children).map(row=>({
+          name:row.querySelector('.cfName').value.trim(),
+          value:row.querySelector('.cfValue').value
+        })).filter(f=>f.name)
       };
       const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
