@@ -21,6 +21,7 @@
     modal.querySelector('#flowClose').onclick=close;
     modal.querySelectorAll('[data-next]').forEach(btn=>btn.onclick=()=>{
       const to=btn.dataset.next;
+      if(to==='BOOK'){close();return window.taurOpenDetailBooking?.(jobId,()=>{const r=wf.transition(jobId,'BOOK');if(!r.ok)return alert(r.message);open(jobId);});}
       if(to==='QC'){const r=wf.transition(jobId,to);if(!r.ok)return alert(r.message);close();open(jobId);return}
       if(to==='APPROVE'){const r=wf.transition(jobId,to);if(!r.ok)return alert(r.message);close();open(jobId);return}
       const r=wf.transition(jobId,to);if(!r.ok)return alert(r.message);close();open(jobId);
