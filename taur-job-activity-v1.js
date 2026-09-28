@@ -35,6 +35,7 @@
   function describeEvent(type,d){
     if(type==='DETAIL_WORKFLOW_ADVANCED') return {jobId:d?.jobId,type:'WORKFLOW',text:(d?.from||'')+' → '+(d?.to||'')};
     if(type==='DETAIL_QC_RECORDED') return {jobId:d?.jobId,type:'QC '+(d?.status||''),text:d?.note||'QC recorded'};
+    if(type==='DETAIL_BOOKING_SAVED') return {jobId:d?.jobId,type:'BOOKING',text:'Appointment scheduled'};
     if(type==='PAYMENTS_CREATED') return {jobId:d?.jobId,type:'PAYMENT',text:'Payment recorded',meta:{paymentId:d?.id||''}};
     if(type==='QUOTES_CREATED') return {jobId:d?.jobId,type:'QUOTE',text:'Quote created',meta:{quoteId:d?.id||''}};
     if(type==='QUOTES_UPDATED') return {jobId:d?.jobId,type:'QUOTE',text:'Quote updated',meta:{quoteId:d?.id||''}};
