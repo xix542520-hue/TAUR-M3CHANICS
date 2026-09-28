@@ -67,6 +67,7 @@
     checks.push({status,note:String(note||''),at:now});
     const updated=root.jobs.update(id,{qcStatus:status,qcNote:String(note||''),qcAt:now,qcChecks:checks});
     if(!updated)return result(false,'UPDATE_FAILED','Data Core rejected the QC update.');
+    root.emit?.('DETAIL_QC_RECORDED',{jobId:id,status,note:String(note||'')});
     return result(true,'QC_UPDATED','QC status recorded.',{job:updated});
   }
   function requirements(id){
