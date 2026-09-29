@@ -22,8 +22,8 @@
       '<label>VEHICLE</label><select id="jeVehicle"><option value="">No vehicle</option>'+vehicles.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===j.vehicleId?'selected':'')+'>'+esc([x.year,x.make,x.model].filter(Boolean).join(' '))+'</option>').join('')+'</select>'+
       '<label>COMPLAINT / WORK</label><textarea id="jeComplaint">'+esc(j.complaint)+'</textarea>'+
       '<label>TOTAL</label><input id="jeTotal" type="number" step=".01" value="'+Number(j.total||0)+'">'+
-      '<label>STATUS</label><input id="jeStatus" value="'+esc(j.status)+'">'+
-      '<label>STAGE</label><input id="jeStage" value="'+esc(j.stage)+'">'+
+      '<label>STATUS <span class="muted">— controls whether the job is active</span></label><input id="jeStatus" value="'+esc(j.status||"OPEN")+'" placeholder="OPEN / COMPLETE / CANCELLED">'+
+      '<label>STAGE <span class="muted">— workflow label only</span></label><input id="jeStage" value="'+esc(j.stage||"INTAKE")+'" placeholder="INTAKE / DIAGNOSIS / ...">'+
       '<label>WARRANTY</label><input id="jeWarranty" value="'+esc(j.warranty)+'">'+
       '<label>CONDITION</label><input id="jeCondition" value="'+esc(j.condition)+'">'+
       '<label>VEHICLE SIZE</label><input id="jeSize" value="'+esc(j.vehicleSize)+'">'+
