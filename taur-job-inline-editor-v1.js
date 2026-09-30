@@ -34,6 +34,7 @@
       });
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
       d.remove();
+      window.render?.();
       window.taurOpenJobFile?.(id);
     };
   }
