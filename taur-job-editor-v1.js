@@ -35,6 +35,7 @@
       '<label>NOTES</label><textarea id="jeNotes">'+esc(j.notes)+'</textarea>'+
       '<label>FREEFORM JOB DETAILS</label><textarea id="jeFreeform" style="min-height:140px" placeholder="Anything else you want attached to this job...">'+esc(j.freeformDetails||'')+'</textarea>'+
       '<label>CUSTOM FIELDS</label><div id="jeCustomFields"></div><button type="button" class="ghost" id="jeAddField" style="margin:8px 0">+ ADD FIELD</button>'+
+      '<label>RAW JOB DATA <span class="muted">— optional: edit any field directly as JSON</span></label><textarea id="jeRaw" style="min-height:180px;font-family:monospace;font-size:11px"></textarea>'+
       '<button id="jeSave" class="wide" style="margin-top:10px">SAVE JOB</button></div>';
     document.body.appendChild(d);
     const customWrap=d.querySelector('#jeCustomFields');
@@ -50,6 +51,10 @@
       });
     }
     renderCustomFields();
+    const raw=d.querySelector('#jeRaw');
+    const rawSource={...j};
+    delete rawSource.id; delete rawSource.created; delete rawSource.updated;
+    raw.value=JSON.stringify(rawSource,null,2);
     d.querySelector('#jeAddField').onclick=()=>{
       customFields.push({name:'',value:''});
       renderCustomFields();
@@ -57,6 +62,15 @@
     };
     d.querySelector('#jeClose').onclick=close;
     d.querySelector('#jeSave').onclick=()=>{
+      let rawPatch={};
+      const rawText=d.querySelector('#jeRaw').value.trim();
+      if(rawText){
+        try{
+          const parsed=JSON.parse(rawText);
+          if(!parsed || typeof parsed!=='object' || Array.isArray(parsed)) throw new Error('Raw job data must be a JSON object.');
+          rawPatch=parsed;
+        }catch(err){return alert('RAW JOB DATA is invalid JSON: '+err.message);}
+      }
       const patch={
         type:d.querySelector('#jeType').value.trim(),
         title:d.querySelector('#jeTitle').value.trim(),
@@ -81,6 +95,8 @@
           value:row.querySelector('.cfValue').value
         })).filter(f=>f.name)
       };
+      Object.assign(patch,rawPatch);
+      delete patch.id; delete patch.created; delete patch.updated;
       const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
       close();
