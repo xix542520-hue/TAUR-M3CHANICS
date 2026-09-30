@@ -100,6 +100,7 @@
       const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
       close();
+      window.render?.();
       window.taurOpenJobFile?.(id);
     };
   }
