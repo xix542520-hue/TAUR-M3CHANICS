@@ -26,13 +26,20 @@
     d.querySelector('#tieClose').onclick=()=>d.remove();
     d.querySelector('#tieFull').onclick=()=>{d.remove();window.taurEditJob?.(id);};
     d.querySelector('#tieSave').onclick=()=>{
-      const updated=root.jobs?.update?.(id,{
+      const patch={
         title:d.querySelector('#tieTitle').value.trim(),
         complaint:d.querySelector('#tieComplaint').value,
         notes:d.querySelector('#tieNotes').value,
         freeformDetails:d.querySelector('#tieFreeform').value
-      });
+      };
+      const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
+      const saved=root.jobs?.get?.(id);
+      if(!saved)return alert('Job saved but could not be re-read from the canonical record.');
+      for(const key of Object.keys(patch)){
+        if(JSON.stringify(saved[key])!==JSON.stringify(patch[key]))
+          return alert('SAVE VERIFICATION FAILED on "'+key+'". Your changes were not confirmed.');
+      }
       d.remove();
       window.render?.();
       window.taurOpenJobFile?.(id);
