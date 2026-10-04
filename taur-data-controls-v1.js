@@ -44,18 +44,20 @@
   refreshVehicles();
   w.querySelector('#eCustomer').onchange=e=>{wCustomer=e.target.value;refreshVehicles();};
   const typeEl=w.querySelector('#eType'),packages=w.querySelector('#ePackages');
+  let packageSelectionTouched=false;
   const refillPackages=()=>{
     const t=typeEl.value;
     const picks=Array.isArray(j.__editPackageSelection)?j.__editPackageSelection:currentPicks;
     packages.innerHTML=pricing.filter(x=>x.type===t).map(x=>`<label class="taur-dc-pick"><input type="checkbox" data-pick="${escX(x.id)}" ${picks.some(p=>p?.id===x.id)?'checked':''}><span><b>${escX(x.name)}</b><small>${moneyX(x.price)} • ${escX(x.description||'')}</small></span><strong>${moneyX(x.price)}</strong></label>`).join('')||'<div class="taur-dc-hint">No price-book services for this division.</div>';
     packages.querySelectorAll('[data-pick]').forEach(box=>box.onchange=()=>{
       const selected=[...packages.querySelectorAll('[data-pick]:checked')].map(b=>pricing.find(x=>x.id===b.dataset.pick)).filter(Boolean);
+      packageSelectionTouched=true;
       j.__editPackageSelection=selected;
       const sum=selected.reduce((n,x)=>n+Number(x.price||0),0);
       w.querySelector('#eTotal').value=sum.toFixed(2)
     });
   };
-  typeEl.onchange=()=>{j.__editPackageSelection=[];refillPackages();};
+  typeEl.onchange=()=>{packageSelectionTouched=true;j.__editPackageSelection=[];refillPackages();};
   refillPackages();
   w.querySelector('#dcCancel').onclick=close;
   w.querySelector('#dcSave').onclick=()=>{
@@ -77,11 +79,9 @@
       vehicleSize:w.querySelector('#eSize').value,
       leadSource:w.querySelector('#eLead').value
     };
-    if(Array.isArray(selected)){
-      patch.priceBookSelections=selected.map(x=>({id:x.id,name:x.name,price:Number(x.price||0),type:x.type}));
+    if(packageSelectionTouched){
+      patch.priceBookSelections=Array.isArray(selected)?selected.map(x=>({id:x.id,name:x.name,price:Number(x.price||0),type:x.type})):[];
       patch.addOns=patch.priceBookSelections.slice();
-    }else if(nextType!==type){
-      patch.priceBookSelections=[];patch.addOns=[];
     }
     const coreAvailable=typeof window.TAUR?.jobs?.update==='function';const updated=coreAvailable?window.TAUR.jobs.update(id,patch):null;if(coreAvailable&&!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
     if(!coreAvailable)return alert('TAUR Data Core is unavailable; job updates are disabled to protect canonical data.');
