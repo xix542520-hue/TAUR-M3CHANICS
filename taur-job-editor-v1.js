@@ -95,8 +95,10 @@
           value:row.querySelector('.cfValue').value
         })).filter(f=>f.name)
       };
-      Object.assign(patch,rawPatch);
-      delete patch.id; delete patch.created; delete patch.updated;
+      Object.assign(rawPatch,patch);
+      const protectedPatch={...rawPatch};
+      delete protectedPatch.id; delete protectedPatch.created; delete protectedPatch.updated;
+      Object.assign(patch,protectedPatch);
       const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
       close();
