@@ -23,6 +23,6 @@
  w.querySelector('#jfxSave').onclick=()=>{const nextStage=w.querySelector('#jfxStage').value;const nextStatus=w.querySelector('#jfxStatus').value;if((nextStage==='COMPLETE'||nextStatus==='COMPLETE')&&j.type==='DETAILING'){const gate=qcCanComplete(j);if(!gate.ok)return alert(gate.reason+'. Use VERIFY FINAL QC before completing this detail job.')}const patch={stage:nextStage,status:nextStatus,total:Number(w.querySelector('#jfxTotal').value||0),laborHours:Number(w.querySelector('#jfxHours').value||0),materialsCost:Number(w.querySelector('#jfxMaterials').value||0),complaint:w.querySelector('#jfxNotes').value.trim(),followUpDate:w.querySelector('#jfxFollow').value};const coreAvailable=typeof window.TAUR?.jobs?.update==='function';if(coreAvailable){const updated=window.TAUR.jobs.update(id,patch);if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');}else return alert('TAUR Data Core is unavailable; job updates are disabled.');close();render()};
  w.querySelector('#jfxPay').onclick=()=>{if(typeof window.taurRecordPayment==='function'){window.taurRecordPayment(id);return}alert('Payment controls are still loading. Reopen the Job File and try again.')};
  }
- window.taurXipOpenJobFile=open;
- const previousJobFile=window.jobFile;window.jobFile=id=>open(id);window.taurXipJobFileLegacy=previousJobFile;
+ window.taurXipOpenJobFile=id=>window.taurOpenJobFile?.(id)||open(id);
+ const previousJobFile=window.jobFile;window.jobFile=id=>window.taurOpenJobFile?.(id)||open(id);window.taurXipJobFileLegacy=previousJobFile;
 })();
