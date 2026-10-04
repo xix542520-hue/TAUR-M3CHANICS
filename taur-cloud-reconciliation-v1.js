@@ -7,8 +7,10 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
  const newerRecord=(a,b)=>{
   const ta=Date.parse(a?.updated||a?.created||a?.deletedAt||0)||0,tb=Date.parse(b?.updated||b?.created||b?.deletedAt||0)||0;
   if(tb>ta)return b;if(ta>tb)return a;
-  const as=stableStringify(a),bs=stableStringify(b);
-  return bs>as?b:a;
+  // Equal timestamps are treated as a local-first tie. This prevents a remote
+  // payload from silently replacing a manual edit when both sides share the
+  // same timestamp precision.
+  return a;
  };
  const mergeRecords=(left,right)=>{const map=new Map();(Array.isArray(left)?left:[]).forEach(x=>{if(x?.id)map.set(x.id,x)});(Array.isArray(right)?right:[]).forEach(x=>{if(!x?.id)return;map.set(x.id,map.has(x.id)?newerRecord(map.get(x.id),x):x)});return [...map.values()]};
  const compareRecordState=(localRecord,remoteRow)=>{
@@ -18,8 +20,9 @@ const TAUR_CLOUD_RECONCILIATION=(function(){
   const rt=Date.parse(remoteRow?.updated_at||remotePayload.updated||remotePayload.created||0)||0;
   if(lt>rt)return 'UPDATE';
   if(rt>lt)return 'KEEP';
-  const ls=stableStringify(localPayload),rs=stableStringify(remotePayload);
-  return ls>=rs?'UPDATE':'KEEP';
+  // Equal timestamps keep the local record authoritative. The next sync writes
+  // that local state back to cloud instead of silently choosing the remote copy.
+  return 'UPDATE';
  };
 
  const buildReconciliationPlan=(local,remoteRows,collections)=>{
