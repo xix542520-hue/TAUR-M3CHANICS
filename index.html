@@ -39,7 +39,7 @@ if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(db));
 }
 taurBootMigrate();
 const stages=["INTAKE","DIAGNOSE","ESTIMATE","APPROVED","REPAIR","VERIFY","COMPLETE"];
-const statuses=["OPEN","IN PROGRESS","WAITING","COMPLETE","CANCELLED"];
+const statuses=["OPEN","IN PROGRESS","WAITING","ON HOLD","COMPLETE","CANCELLED"];
 const serviceFamilies=["A — MAINTENANCE","B — RESTORATION","C — SPECIALTY / ADD-ONS"];
 const conditions=["C1 — MAINTENANCE","C2 — MODERATE","C3 — HEAVY","C4 — EXTREME / INSPECTION REQUIRED"];
 const sizes=["COMPACT","SEDAN / COUPE","SUV / CROSSOVER","TRUCK / LARGE SUV","VAN / OVERSIZE"];
