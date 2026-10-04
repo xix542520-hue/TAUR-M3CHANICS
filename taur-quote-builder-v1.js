@@ -93,9 +93,12 @@
       else if(root.quotes?.create)q=root.quotes.create(quoteData);
       else q=null;
       if(!q)return alert('Quote was rejected by the Data Core; nothing was changed.');
+      // Saving a quote must not silently rewrite a manually fixed Job File total.
+      // The quote owns its own total; the job only receives quote metadata/scope.
       if(root.jobs?.update){
-        const patch={serviceId:service.id,serviceVersion:service.version,serviceFamily:service.family,condition:cond.value,vehicleSize:w.querySelector('#qbSize').value,priceBookSelections:w.__quoteItems||[],total:Number(total.value||0),laborHours:Number(w.querySelector('#qbLabor').value||0),materialsCost:Number(w.querySelector('#qbMaterials').value||0),travelMinutes:Number(w.querySelector('#qbTravel').value||0),quoteId:q.id};
-        root.jobs.update(jobId,patch);
+        const patch={serviceId:service.id,serviceVersion:service.version,serviceFamily:service.family,condition:cond.value,vehicleSize:w.querySelector('#qbSize').value,priceBookSelections:w.__quoteItems||[],laborHours:Number(w.querySelector('#qbLabor').value||0),materialsCost:Number(w.querySelector('#qbMaterials').value||0),travelMinutes:Number(w.querySelector('#qbTravel').value||0),quoteId:q.id};
+        const updatedJob=root.jobs.update(jobId,patch);
+        if(!updatedJob)return alert('Quote saved, but the Job File metadata update was rejected.');
       }
       close();if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(jobId);else if(typeof jobFile==='function')jobFile(jobId);
     }
