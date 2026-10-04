@@ -101,6 +101,12 @@
       Object.assign(patch,protectedPatch);
       const updated=root.jobs?.update?.(id,patch);
       if(!updated)return alert('Job update was rejected by the Data Core; nothing was changed.');
+      const saved=root.jobs?.get?.(id);
+      if(!saved)return alert('Job saved but could not be re-read from the canonical record.');
+      for(const key of Object.keys(patch)){
+        if(JSON.stringify(saved[key])!==JSON.stringify(patch[key]))
+          return alert('SAVE VERIFICATION FAILED on "'+key+'". Your changes were not confirmed.');
+      }
       close();
       window.render?.();
       window.taurOpenJobFile?.(id);
