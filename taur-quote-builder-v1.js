@@ -99,6 +99,9 @@
         const patch={serviceId:service.id,serviceVersion:service.version,serviceFamily:service.family,condition:cond.value,vehicleSize:w.querySelector('#qbSize').value,priceBookSelections:w.__quoteItems||[],laborHours:Number(w.querySelector('#qbLabor').value||0),materialsCost:Number(w.querySelector('#qbMaterials').value||0),travelMinutes:Number(w.querySelector('#qbTravel').value||0),quoteId:q.id};
         const updatedJob=root.jobs.update(jobId,patch);
         if(!updatedJob)return alert('Quote saved, but the Job File metadata update was rejected.');
+        const savedJob=root.jobs.get(jobId);
+        if(!savedJob)return alert('Quote saved, but the Job File could not be re-read.');
+        for(const key of Object.keys(patch)){if(JSON.stringify(savedJob[key])!==JSON.stringify(patch[key]))return alert('QUOTE SAVE VERIFICATION FAILED on \"'+key+'\".');}
       }
       close();if(typeof taurXipOpenJobFile==='function')taurXipOpenJobFile(jobId);else if(typeof jobFile==='function')jobFile(jobId);
     }
