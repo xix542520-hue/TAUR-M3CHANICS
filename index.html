@@ -34,7 +34,7 @@ db.jobs.forEach(j=>{j.stage=j.stage||"INTAKE";j.status=String(j.status||"OPEN").
 db.customers.forEach(c=>{c.logRouting=c.logRouting||"BOTH"});
 db.quotes.forEach(q=>{q.status=q.status||"DRAFT";q.total=Number(q.total||0)});
 db.payments.forEach(x=>{x.amount=Number(x.amount||0)});
-if(!localStorage.getItem(KEY))localStorage.setItem(KEY,JSON.stringify(db));
+localStorage.setItem(KEY,JSON.stringify(db));
   window.taurBootMigration={version:1,ranAt:new Date().toISOString()};
 }
 taurBootMigrate();
