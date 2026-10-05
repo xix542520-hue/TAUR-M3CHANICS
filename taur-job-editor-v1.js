@@ -22,7 +22,7 @@
       '<label>VEHICLE</label><select id="jeVehicle"><option value="">No vehicle</option>'+vehicles.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===j.vehicleId?'selected':'')+'>'+esc([x.year,x.make,x.model].filter(Boolean).join(' '))+'</option>').join('')+'</select>'+
       '<label>COMPLAINT / WORK</label><textarea id="jeComplaint">'+esc(j.complaint)+'</textarea>'+
       '<label>TOTAL</label><input id="jeTotal" type="number" step=".01" value="'+Number(j.total||0)+'">'+
-       '<label>STATUS <span class="muted">— controls whether the job is active</span></label><select id="jeStatus">'+["OPEN","IN PROGRESS","WAITING","ON HOLD","COMPLETE","CANCELLED"].map(s=>'<option value="'+s+'" '+((j.status||"OPEN")===s?'selected':'')+'>'+s+'</option>').join('')+'</select>'+
+       '<label>STATUS <span class="muted">— controls whether the job is active</span></label><select id="jeStatus">'+["OPEN","IN PROGRESS","WAITING","ON HOLD","COMPLETE","CANCELLED"].concat(["OPEN","IN PROGRESS","WAITING","ON HOLD","COMPLETE","CANCELLED"].includes(j.status)?[]:[j.status||"OPEN"]).map(s=>'<option value="'+s+'" '+((j.status||"OPEN")===s?'selected':'')+'>'+s+'</option>').join('')+'</select>'+
       '<label>STAGE <span class="muted">— workflow label only</span></label><input id="jeStage" value="'+esc(j.stage||"INTAKE")+'" placeholder="INTAKE / DIAGNOSIS / ...">'+
       '<label>WARRANTY</label><input id="jeWarranty" value="'+esc(j.warranty)+'">'+
       '<label>CONDITION</label><input id="jeCondition" value="'+esc(j.condition)+'">'+
