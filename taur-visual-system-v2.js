@@ -84,7 +84,7 @@
   .taur-xip-bar{left:8px;right:8px;bottom:72px;grid-template-columns:repeat(2,1fr);gap:6px;max-width:none}
   .taur-xip-bar button{min-height:48px;font-size:10px}
   .taur-xip-label{top:62px;left:10px}
-  .taur-xip-modal,.taur-pb-modal,.taur-dc-modal{align-items:flex-end!important;padding:0!important}
+  .taur-xip-modal,.taur-pb-modal,.taur-dc-modal{align-items:flex-end!important;padding:0 0 calc(78px + env(safe-area-inset-bottom))!important}
   .taur-xip-card,.taur-pb-card,.taur-dc-card{width:100%!important;max-width:none!important;max-height:92vh!important;border-radius:20px 20px 0 0!important;padding:15px 13px calc(18px + env(safe-area-inset-bottom))!important}
   .taur-xip-title{font-size:19px!important}
   .taur-xip-grid{grid-template-columns:1fr!important}
