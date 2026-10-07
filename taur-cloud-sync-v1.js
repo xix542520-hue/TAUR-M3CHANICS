@@ -9,9 +9,9 @@ let lastReconciliationPlan=null;
  const legacyLocalDb=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
  const localDb=()=>window.TAUR?.data?window.TAUR.data.db:legacyLocalDb();
  const localSave=db=>{if(typeof window.taurSetDb==='function')window.taurSetDb(db);else localStorage.setItem(KEY,JSON.stringify(db))};
- const newerRecord=TAUR_CLOUD_RECONCILIATION.newerRecord;
- const mergeRecords=TAUR_CLOUD_RECONCILIATION.mergeRecords;
- const applyTombstones=TAUR_CLOUD_RECONCILIATION.applyTombstones;
+ const reconciliation=globalThis.TAUR_CLOUD_RECONCILIATION;if(!reconciliation)throw new Error("TAUR cloud reconciliation engine is unavailable"); const newerRecord=reconciliation.newerRecord;
+ const mergeRecords=reconciliation.mergeRecords;
+ const applyTombstones=reconciliation.applyTombstones;
   const toast=(msg,good=false)=>{let x=document.getElementById('taurCloudToast');if(!x){x=document.createElement('div');x.id='taurCloudToast';x.style.cssText='position:fixed;left:12px;right:12px;bottom:78px;z-index:300;padding:11px 13px;border:1px solid #333;border-radius:10px;background:#151515;color:#eee;font-size:11px;text-align:center';document.body.appendChild(x)}x.textContent=msg;x.style.borderColor=good?'#315b31':'#4a2b2b';clearTimeout(timer);timer=setTimeout(()=>x.remove(),3500)};
  async function loadSdk(){if(window.supabase)return;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
  function scheduleCoreSync(){
@@ -82,7 +82,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    if(remoteError)throw remoteError;
    const merged=mergeRemoteRowsIntoLocal(local,remoteRows);syncStage='reconcile';
    localSave(merged);if(typeof window.taurSetDb==='function')window.taurSetDb(merged);
-   const reconciliationPlan=TAUR_CLOUD_RECONCILIATION.buildReconciliationPlan(merged,remoteRows,COLLECTIONS); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
+   const reconciliationPlan=reconciliation.buildReconciliationPlan(merged,remoteRows,COLLECTIONS); lastReconciliationPlan={at:new Date().toISOString(),plan:reconciliationPlan};
    const staleByCollection={};
    for(const collection of COLLECTIONS){
      syncStage=`write-${collection}`;
@@ -152,7 +152,7 @@ async function init(){try{await loadSdk();client=window.supabase.createClient(SU
    const newer=mergeRecords([a],[{...a,updated:'2026-01-02T00:00:00Z',value:3}]);assert('newer update wins',newer[0].value===3);
    const older=mergeRecords([a],[{...a,updated:'2025-12-01T00:00:00Z',value:9}]);assert('older update loses',older[0].value===1);
    const tie=mergeRecords([a],[{...a,updated:'2026-01-01T00:00:00Z',value:7}]);assert('equal timestamps keep local record',tie[0].value===1);
-   const localTie={id:'job-tie',updated:'2026-02-01T00:00:00Z',total:150},remoteTie={record_id:'job-tie',updated_at:'2026-02-01T00:00:00Z',payload:{id:'job-tie',updated:'2026-02-01T00:00:00Z',total:999}};assert('equal job timestamps prefer local state',TAUR_CLOUD_RECONCILIATION.compareRecordState(localTie,remoteTie)==='UPDATE');
+   const localTie={id:'job-tie',updated:'2026-02-01T00:00:00Z',total:150},remoteTie={record_id:'job-tie',updated_at:'2026-02-01T00:00:00Z',payload:{id:'job-tie',updated:'2026-02-01T00:00:00Z',total:999}};assert('equal job timestamps prefer local state',reconciliation.compareRecordState(localTie,remoteTie)==='UPDATE');
    const tomb={id:'customers:a',collection:'customers',recordId:'a',deletedAt:'2026-01-03T00:00:00Z'};
    const freshDb={customers:[{id:'a',updated:'2026-01-04T00:00:00Z',value:4}],tombstones:[tomb]};
    const freshApplied=applyTombstones(freshDb);assert('newer recreation beats tombstone',freshApplied.customers.some(x=>x.id==='a')&&!freshApplied.tombstones.some(x=>x.id===tomb.id));
